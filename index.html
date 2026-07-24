@@ -21,10 +21,27 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,att
 var marker=null;
 var routeLine=null;
 var currentPos=null;
+var steps=[];
 navigator.geolocation.watchPosition(function(p){
 currentPos=[p.coords.latitude,p.coords.longitude];
 if(!marker){marker=L.marker(currentPos).addTo(map);}else{marker.setLatLng(currentPos);}
 map.setView(currentPos,17);
+if(steps.length>0){
+var minStep=null;
+var minDist=999999;
+steps.forEach(function(s){
+var d=Math.sqrt(Math.pow(currentPos[0]-s.maneuver.location[1],2)+Math.pow(currentPos[1]-s.maneuver.location[0],2));
+if(d<minDist){minDist=d;minStep=s;}
+});
+if(minStep){
+var m=minStep.maneuver;
+var txt="";
+if(m.modifier==="right")txt="右折";
+if(m.modifier==="left")txt="左折";
+if(m.type==="straight")txt="直進";
+document.getElementById("dir").innerHTML=txt;
+}
+}
 });
 window.addEventListener("deviceorientation",function(e){
 document.getElementById("arrow").style.transform="rotate("+e.alpha+"deg)";
@@ -37,14 +54,7 @@ var url=`https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${cur
 fetch(url).then(r=>r.json()).then(d=>{
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
-var steps=d.routes[0].legs[0].steps;
-var s="";
-steps.forEach(t=>{
-if(t.maneuver.modifier==="right")s="右折";
-if(t.maneuver.modifier==="left")s="左折";
-if(t.maneuver.type==="straight")s="直進";
-});
-document.getElementById("dir").innerHTML=s;
+steps=d.routes[0].legs[0].steps;
 });
 });
 </script>
