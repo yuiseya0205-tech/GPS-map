@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS</title>
+<title>Store Route</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -95,6 +95,7 @@ steps=d.routes[0].legs[0].steps;
 });
 }
 map.on('click',function(e){
+clearStores();
 goTo([e.latlng.lat,e.latlng.lng]);
 });
 </script>
