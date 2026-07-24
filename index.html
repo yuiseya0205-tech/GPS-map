@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Route</title>
+<title>GpsMap</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -27,19 +27,19 @@ currentPos=[p.coords.latitude,p.coords.longitude];
 if(!marker){marker=L.marker(currentPos).addTo(map);}else{marker.setLatLng(currentPos);}
 map.setView(currentPos,17);
 if(steps.length>0){
-var minStep=null;
-var minDist=999999;
+var next=null;
+var dist=999999;
 steps.forEach(function(s){
 var d=Math.sqrt(Math.pow(currentPos[0]-s.maneuver.location[1],2)+Math.pow(currentPos[1]-s.maneuver.location[0],2));
-if(d<minDist){minDist=d;minStep=s;}
+if(d<dist){dist=d;next=s;}
 });
-if(minStep){
-var m=minStep.maneuver;
-var txt="";
-if(m.modifier==="right")txt="右折";
-if(m.modifier==="left")txt="左折";
-if(m.type==="straight")txt="直進";
-document.getElementById("dir").innerHTML=txt;
+if(next){
+var m=next.maneuver;
+var t="";
+if(m.modifier==="right")t="右折";
+if(m.modifier==="left")t="左折";
+if(m.type==="straight")t="直進";
+document.getElementById("dir").innerHTML=t;
 }
 }
 });
