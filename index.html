@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_MAP_System</title>
+<title>GPS_MAP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -12,6 +12,8 @@
 #searchBox{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:5px;}
 #results{position:absolute;top:50px;left:10px;z-index:9999;background:white;width:250px;max-height:250px;overflow:auto;display:none;}
 .resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
+#gpsBtns{margin-top:10px;}
+.btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
 </style>
 </head>
 <body>
@@ -23,6 +25,7 @@
 <button onclick="searchStore()">検索</button>
 </div>
 <div id="results"></div>
+
 <script>
 var map=L.map('map').setView([35,135],5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
@@ -55,8 +58,17 @@ document.getElementById("dir").innerHTML=t;
 }
 }
 },function(){
-document.getElementById("dir").innerHTML="位置情報をオンにしますか？";
+document.getElementById("dir").innerHTML=
+"位置情報をオンにしますか？<div id='gpsBtns'><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
 });
+
+function gpsYes(){
+location.href="app-settings:";
+}
+
+function gpsNo(){
+document.getElementById("dir").innerHTML="位置情報がオフです";
+}
 
 window.addEventListener("deviceorientation",function(e){
 document.getElementById("arrow").style.transform="rotate("+e.alpha+"deg)";
@@ -105,7 +117,8 @@ m.on("click",function(){goTo([s.lat,s.lon]);});
 function goTo(dest){
 clearRoute();
 if(!currentPos){
-document.getElementById("dir").innerHTML="位置情報をオンにしますか？";
+document.getElementById("dir").innerHTML=
+"位置情報をオンにしますか？<div id='gpsBtns'><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
 return;
 }
 
