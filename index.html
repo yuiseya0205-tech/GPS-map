@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS MAP</title>
+<title>Route System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -14,6 +14,8 @@
 .resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
 #gpsBtns{margin-top:10px;}
 .btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
+#permitBox{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:white;padding:15px;border:1px solid #000;z-index:99999;display:none;text-align:center;width:260px;}
+.permitBtn{padding:8px;border:1px solid #000;margin-top:10px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -25,6 +27,13 @@
 <button onclick="searchStore()">検索</button>
 </div>
 <div id="results"></div>
+
+<div id="permitBox">
+位置情報を許可しますか？<br><br>
+<div class="permitBtn" onclick="permitOnce()">今回のみ許可</div>
+<div class="permitBtn" onclick="permitUse()">サイト使用中のみ許可</div>
+<div class="permitBtn" onclick="permitNo()">許可しない</div>
+</div>
 
 <script>
 var map=L.map('map').setView([35,135],5);
@@ -63,10 +72,25 @@ document.getElementById("dir").innerHTML=
 });
 
 function gpsYes(){
-document.getElementById("dir").innerHTML="設定 → プライバシー → 位置情報サービス をオンにしてください";
+document.getElementById("permitBox").style.display="block";
 }
 
 function gpsNo(){
+document.getElementById("dir").innerHTML="位置情報がオフです";
+}
+
+function permitOnce(){
+document.getElementById("permitBox").style.display="none";
+document.getElementById("dir").innerHTML="今回のみ許可されました（実際の許可はブラウザ設定で行ってください）";
+}
+
+function permitUse(){
+document.getElementById("permitBox").style.display="none";
+document.getElementById("dir").innerHTML="サイト使用中のみ許可されました（実際の許可はブラウザ設定で行ってください）";
+}
+
+function permitNo(){
+document.getElementById("permitBox").style.display="none";
 document.getElementById("dir").innerHTML="位置情報がオフです";
 }
 
