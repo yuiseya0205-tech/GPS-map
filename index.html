@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS map</title>
+<title>All Route System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -12,12 +12,19 @@
 #searchBox{position:absolute;top:10px;left:60px;z-index:9999;background:white;padding:5px;}
 #results{position:absolute;top:50px;left:60px;z-index:9999;background:white;width:250px;max-height:250px;overflow:auto;display:none;}
 .resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
+#mode{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:5px;}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="dir"></div>
 <div id="arrow">▽</div>
+<div id="mode">
+<select id="routeMode">
+<option value="car">車（OSRM）</option>
+<option value="train">電車（Navitia）</option>
+</select>
+</div>
 <div id="searchBox">
 <input id="word" placeholder="店を検索" style="width:200px;">
 <button onclick="searchStore()">検索</button>
@@ -27,7 +34,7 @@
 var map=L.map('map').setView([35,135],5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
 var marker=null;
-var routeLine=null;
+var routeLines=[];
 var currentPos=null;
 var steps=[];
 var storeMarkers=[];
@@ -59,8 +66,13 @@ function clearStores(){
 storeMarkers.forEach(function(m){map.removeLayer(m);});
 storeMarkers=[];
 }
+function clearRoutes(){
+routeLines.forEach(function(l){map.removeLayer(l);});
+routeLines=[];
+}
 function searchStore(){
 clearStores();
+clearRoutes();
 document.getElementById("results").innerHTML="";
 document.getElementById("results").style.display="none";
 var w=document.getElementById("word").value;
@@ -86,13 +98,34 @@ m.on("click",function(){goTo([s.lat,s.lon]);});
 });
 }
 function goTo(dest){
-if(routeLine)map.removeLayer(routeLine);
+clearRoutes();
+var mode=document.getElementById("routeMode").value;
+if(mode==="car"){
 var url=`https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${currentPos[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
 fetch(url).then(r=>r.json()).then(d=>{
-var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 steps=d.routes[0].legs[0].steps;
+var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+var line=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
+routeLines.push(line);
 });
+}else{
+var apiKey="YOUR_NAVITIA_API_KEY";
+var url=`https://api.navitia.io/v1/journeys?from=${currentPos[1]};${currentPos[0]}&to=${dest[1]};${dest[0]}`;
+fetch(url,{headers:{"Authorization":apiKey}})
+.then(r=>r.json())
+.then(d=>{
+var poly=[];
+d.journeys[0].sections.forEach(function(sec){
+if(sec.geojson){
+sec.geojson.coordinates.forEach(function(c){
+poly.push([c[1],c[0]]);
+});
+}
+});
+var line=L.polyline(poly,{color:'red',weight:5}).addTo(map);
+routeLines.push(line);
+});
+}
 }
 map.on('click',function(e){
 clearStores();
