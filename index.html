@@ -15,7 +15,8 @@
 .resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
 #viewBox{position:absolute;top:10px;right:10px;z-index:9999;background:white;padding:5px;}
 .btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
-#twoPointBox{position:absolute;top:10px;left:500px;z-index:9999;background:white;padding:5px;}
+#twoPointBox{position:absolute;top:10px;left:300px;z-index:9999;background:white;padding:5px;}
+#speedBox{position:absolute;top:10px;left:430px;z-index:9999;background:white;padding:5px;}
 </style>
 </head>
 <body>
@@ -31,6 +32,10 @@
 
 <div id="twoPointBox">
 <label><input type="checkbox" id="twoPointMode"> 2点ルート</label>
+</div>
+
+<div id="speedBox">
+時速 <input id="speed" type="number" value="25" style="width:60px;"> km/h
 </div>
 
 <div id="viewBox">
@@ -111,6 +116,14 @@ routeLine=null;
 document.getElementById("eta").innerHTML="";
 }
 
+function calcTime(distance){
+var sp=document.getElementById("speed").value;
+var totalMinutes=(distance/(sp*1000))*60;
+var h=Math.floor(totalMinutes/60);
+var m=Math.round(totalMinutes%60);
+return (h>0?h+"時間":"")+m+"分";
+}
+
 function searchStore(){
 clearStores();
 clearRoute();
@@ -155,11 +168,7 @@ fetch(url).then(r=>r.json()).then(d=>{
 steps=d.routes[0].legs[0].steps;
 
 var distance=d.routes[0].distance;
-var totalMinutes=(distance/25000)*60;
-var h=Math.floor(totalMinutes/60);
-var m=Math.round(totalMinutes%60);
-var txt=(h>0?h+"時間":"")+m+"分";
-document.getElementById("eta").innerHTML=txt;
+document.getElementById("eta").innerHTML=calcTime(distance);
 
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
@@ -201,11 +210,7 @@ fetch(url).then(r=>r.json()).then(d=>{
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 redLine=L.polyline(coords,{color:'red',weight:5}).addTo(map);
 var distance=d.routes[0].distance;
-var totalMinutes=(distance/25000)*60;
-var h=Math.floor(totalMinutes/60);
-var m=Math.round(totalMinutes%60);
-var txt=(h>0?h+"時間":"")+m+"分";
-document.getElementById("eta").innerHTML=txt;
+document.getElementById("eta").innerHTML=calcTime(distance);
 });
 return;
 }
