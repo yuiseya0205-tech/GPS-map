@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_MAP_System</title>
+<title>Route System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
 #map{height:100vh;}
-#dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;text-align:center;font-size:20px;z-index:9999;}
+#dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
 #eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
 #arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;}
 #searchBox{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:5px;}
@@ -31,7 +31,6 @@
 <div id="viewBox">
 <select id="viewSelect" onchange="changeView()">
 <option value="osm">OpenStreetMap</option>
-<option value="osm_mono">OpenStreetMap Mono</option>
 <option value="gsi_light">地理院地図 淡色</option>
 <option value="gsi_ortho">地理院地図 オルソ</option>
 </select>
@@ -44,7 +43,6 @@ var map=L.map('map').setView([35,135],5);
 
 var layers={
 osm:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}),
-osm_mono:L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png',{maxZoom:19}),
 gsi_light:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:18}),
 gsi_ortho:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg',{maxZoom:18})
 };
