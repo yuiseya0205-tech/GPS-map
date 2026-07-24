@@ -94,6 +94,9 @@ routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 steps=d.routes[0].legs[0].steps;
 });
 }
+map.on('click',function(e){
+goTo([e.latlng.lat,e.latlng.lng]);
+});
 </script>
 </body>
 </html>
