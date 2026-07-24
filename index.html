@@ -10,40 +10,12 @@
 #dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
 #eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
 #arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;}
-
-#searchBox{
-  position:absolute;
-  top:10px;
-  left:80px;   /* ← ここを右へ移動 */
-  z-index:9999;
-  background:white;
-  padding:5px;
-}
-
-#results{
-  position:absolute;
-  top:50px;
-  left:80px;   /* ← 検索欄と揃える */
-  z-index:9999;
-  background:white;
-  width:250px;
-  max-height:250px;
-  overflow:auto;
-  display:none;
-}
-
+#searchBox{position:absolute;top:10px;left:80px;z-index:9999;background:white;padding:5px;}
+#results{position:absolute;top:50px;left:80px;z-index:9999;background:white;width:250px;max-height:250px;overflow:auto;display:none;}
 .resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
-
-#viewBox{
-  position:absolute;
-  top:10px;
-  right:10px;
-  z-index:9999;
-  background:white;
-  padding:5px;
-}
-
+#viewBox{position:absolute;top:10px;right:10px;z-index:9999;background:white;padding:5px;}
 .btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
+#twoPointBox{position:absolute;top:10px;left:300px;z-index:9999;background:white;padding:5px;}
 </style>
 </head>
 <body>
@@ -57,6 +29,10 @@
 <button onclick="searchStore()">検索</button>
 </div>
 
+<div id="twoPointBox">
+<label><input type="checkbox" id="twoPointMode"> 2点ルート</label>
+</div>
+
 <div id="viewBox">
 <select id="viewSelect" onchange="changeView()">
 <option value="osm">OpenStreetMap</option>
@@ -68,7 +44,6 @@
 <div id="results"></div>
 
 <script>
-/* ここから下は君の元コードそのまま（省略なし） */
 var map=L.map('map').setView([35,135],5);
 
 var layers={
@@ -191,8 +166,47 @@ routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 });
 }
 
+var twoPointMode=false;
+var startPoint=null;
+var endPoint=null;
+var redLine=null;
+
+document.getElementById("twoPointMode").addEventListener("change",function(){
+twoPointMode=this.checked;
+startPoint=null;
+endPoint=null;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+});
+
 map.on('click',function(e){
 var tap=[e.latlng.lat,e.latlng.lng];
+
+if(twoPointMode){
+if(!startPoint){
+startPoint=tap;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+L.marker(startPoint).addTo(map);
+return;
+}
+if(!endPoint){
+endPoint=tap;
+L.marker(endPoint).addTo(map);
+var url=`https://router.project-osrm.org/route/v1/driving/${startPoint[1]},${startPoint[0]};${endPoint[1]},${endPoint[0]}?overview=full&geometries=geojson`;
+fetch(url).then(r=>r.json()).then(d=>{
+var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+redLine=L.polyline(coords,{color:'red',weight:5}).addTo(map);
+});
+return;
+}
+startPoint=tap;
+endPoint=null;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+L.marker(startPoint).addTo(map);
+return;
+}
 
 if(lastTapPos && Math.hypot(lastTapPos[0]-tap[0],lastTapPos[1]-tap[1])<0.00005){
 lastTapPos=tap;
