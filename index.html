@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_System</title>
+<title>GPS_MAP_System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -177,6 +177,9 @@ startPoint=null;
 endPoint=null;
 if(redLine)map.removeLayer(redLine);
 redLine=null;
+if(routeLine)map.removeLayer(routeLine);
+routeLine=null;
+document.getElementById("eta").innerHTML="";
 });
 
 map.on('click',function(e){
@@ -197,6 +200,12 @@ var url=`https://router.project-osrm.org/route/v1/driving/${startPoint[1]},${sta
 fetch(url).then(r=>r.json()).then(d=>{
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 redLine=L.polyline(coords,{color:'red',weight:5}).addTo(map);
+var distance=d.routes[0].distance;
+var totalMinutes=(distance/25000)*60;
+var h=Math.floor(totalMinutes/60);
+var m=Math.round(totalMinutes%60);
+var txt=(h>0?h+"時間":"")+m+"分";
+document.getElementById("eta").innerHTML=txt;
 });
 return;
 }
