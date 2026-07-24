@@ -2,12 +2,13 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS System</title>
+<title>Route System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
 #map{height:100vh;}
-#dir{position:absolute;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center;font-size:20px;z-index:9999;}
+#dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;text-align:center;font-size:20px;z-index:9999;}
+#eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
 #arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;}
 #searchBox{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:5px;}
 #results{position:absolute;top:50px;left:10px;z-index:9999;background:white;width:250px;max-height:250px;overflow:auto;display:none;}
@@ -19,6 +20,7 @@
 <body>
 <div id="map"></div>
 <div id="dir"></div>
+<div id="eta"></div>
 <div id="arrow">▽</div>
 
 <div id="searchBox">
@@ -88,13 +90,8 @@ document.getElementById("dir").innerHTML=
 "位置情報をオンにしますか？<div><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
 });
 
-function gpsYes(){
-location.reload();
-}
-
-function gpsNo(){
-document.getElementById("dir").innerHTML="位置情報がオフです";
-}
+function gpsYes(){location.reload();}
+function gpsNo(){document.getElementById("dir").innerHTML="位置情報がオフです";}
 
 window.addEventListener("deviceorientation",function(e){
 document.getElementById("arrow").style.transform="rotate("+e.alpha+"deg)";
@@ -108,6 +105,7 @@ storeMarkers=[];
 function clearRoute(){
 if(routeLine)map.removeLayer(routeLine);
 routeLine=null;
+document.getElementById("eta").innerHTML="";
 }
 
 function searchStore(){
@@ -152,6 +150,11 @@ var url=`https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${cur
 
 fetch(url).then(r=>r.json()).then(d=>{
 steps=d.routes[0].legs[0].steps;
+
+var distance=d.routes[0].distance;
+var minutes=Math.round((distance/25000)*60);
+document.getElementById("eta").innerHTML=minutes+"分";
+
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 });
