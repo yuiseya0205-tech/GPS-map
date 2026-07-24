@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_MAP</title>
+<title>Route System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -63,7 +63,7 @@ document.getElementById("dir").innerHTML=
 });
 
 function gpsYes(){
-location.href="app-settings:";
+document.getElementById("dir").innerHTML="設定 → プライバシー → 位置情報サービス をオンにしてください";
 }
 
 function gpsNo(){
