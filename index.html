@@ -12,20 +12,31 @@
 #searchBox{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:5px;}
 #results{position:absolute;top:50px;left:10px;z-index:9999;background:white;width:250px;max-height:250px;overflow:auto;display:none;}
 .resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
-#gpsBtns{margin-top:10px;}
-.btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
+#viewBox{position:absolute;top:10px;right:10px;z-index:9999;background:white;padding:5px;}
 #permitBox{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:white;padding:15px;border:1px solid #000;z-index:99999;display:none;text-align:center;width:260px;}
 .permitBtn{padding:8px;border:1px solid #000;margin-top:10px;cursor:pointer;}
+.btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="dir"></div>
 <div id="arrow">▽</div>
+
 <div id="searchBox">
 <input id="word" placeholder="店を検索" style="width:200px;">
 <button onclick="searchStore()">検索</button>
 </div>
+
+<div id="viewBox">
+<select id="viewSelect" onchange="changeView()">
+<option value="osm">OpenStreetMap</option>
+<option value="osm_mono">OpenStreetMap Mono</option>
+<option value="gsi_light">地理院地図 淡色</option>
+<option value="gsi_ortho">地理院地図 オルソ</option>
+</select>
+</div>
+
 <div id="results"></div>
 
 <div id="permitBox">
@@ -37,7 +48,22 @@
 
 <script>
 var map=L.map('map').setView([35,135],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+var layers={
+osm:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}),
+osm_mono:L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png',{maxZoom:19}),
+gsi_light:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:18}),
+gsi_ortho:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg',{maxZoom:18})
+};
+
+layers.osm.addTo(map);
+
+function changeView(){
+var v=document.getElementById("viewSelect").value;
+Object.values(layers).forEach(l=>map.removeLayer(l));
+layers[v].addTo(map);
+}
+
 var marker=null;
 var routeLine=null;
 var currentPos=null;
@@ -68,7 +94,7 @@ document.getElementById("dir").innerHTML=t;
 }
 },function(){
 document.getElementById("dir").innerHTML=
-"位置情報をオンにしますか？<div id='gpsBtns'><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
+"位置情報をオンにしますか？<div><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
 });
 
 function gpsYes(){
@@ -142,7 +168,7 @@ function goTo(dest){
 clearRoute();
 if(!currentPos){
 document.getElementById("dir").innerHTML=
-"位置情報をオンにしますか？<div id='gpsBtns'><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
+"位置情報をオンにしますか？<div><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
 return;
 }
 
