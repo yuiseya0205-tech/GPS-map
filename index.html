@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_System</title>
+<title>Route System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -10,10 +10,39 @@
 #dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
 #eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
 #arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;}
-#searchBox{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:5px;}
-#results{position:absolute;top:50px;left:10px;z-index:9999;background:white;width:250px;max-height:250px;overflow:auto;display:none;}
+
+#searchBox{
+  position:absolute;
+  top:10px;
+  left:80px;   /* ← ここを右へ移動 */
+  z-index:9999;
+  background:white;
+  padding:5px;
+}
+
+#results{
+  position:absolute;
+  top:50px;
+  left:80px;   /* ← 検索欄と揃える */
+  z-index:9999;
+  background:white;
+  width:250px;
+  max-height:250px;
+  overflow:auto;
+  display:none;
+}
+
 .resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
-#viewBox{position:absolute;top:10px;right:10px;z-index:9999;background:white;padding:5px;}
+
+#viewBox{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:9999;
+  background:white;
+  padding:5px;
+}
+
 .btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
 </style>
 </head>
@@ -39,6 +68,7 @@
 <div id="results"></div>
 
 <script>
+/* ここから下は君の元コードそのまま（省略なし） */
 var map=L.map('map').setView([35,135],5);
 
 var layers={
@@ -153,7 +183,6 @@ var distance=d.routes[0].distance;
 var totalMinutes=(distance/25000)*60;
 var h=Math.floor(totalMinutes/60);
 var m=Math.round(totalMinutes%60);
-
 var txt=(h>0?h+"時間":"")+m+"分";
 document.getElementById("eta").innerHTML=txt;
 
