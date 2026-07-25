@@ -2,38 +2,54 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GMAP</title>
+<title>GPS_MAP_CAMERA_SAVE_TITLE</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
-#map{height:100vh;}
+body{margin:0;overflow:hidden;}
+#map{position:absolute;left:0;top:0;width:100%;height:100vh;}
+#cameraBtn{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
+#titleInputBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;}
+#titleInput{font-size:20px;width:300px;}
+#titleSaveBtn{font-size:20px;margin-top:10px;}
+#photoView{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:white;padding:10px;display:none;text-align:center;}
+#photoTitle{font-size:24px;margin-bottom:10px;}
+#photoView img{max-width:80vw;max-height:80vh;}
+#closePhoto{font-size:20px;margin-top:10px;}
 #dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
 #eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
 #arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;}
 #speedNow{position:absolute;bottom:60px;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
-#followBox{position:absolute;top:10px;left:650px;z-index:9999;background:white;padding:5px;}
-#searchBox{position:absolute;top:10px;left:80px;z-index:9999;background:white;padding:5px;}
-#results{position:absolute;top:50px;left:80px;z-index:9999;background:white;width:250px;max-height:250px;overflow:auto;display:none;}
-.resultItem{padding:8px;border-bottom:1px solid #ccc;cursor:pointer;}
-#viewBox{position:absolute;top:10px;right:10px;z-index:9999;background:white;padding:5px;}
-.btn{padding:5px 10px;border:1px solid #000;cursor:pointer;margin:0 5px;display:inline-block;}
-#twoPointBox{position:absolute;top:10px;left:400px;z-index:9999;background:white;padding:5px;}
+#followBox{position:absolute;top:10px;left:300px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
+#twoPointBox{position:absolute;top:10px;left:450px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
+#viewBox{position:absolute;top:10px;left:150px;background:white;padding:5px;z-index:9999;}
 </style>
 </head>
 <body>
+
 <div id="map"></div>
+<div id="cameraBtn" onclick="openCamera()">📷 カメラ</div>
+
+<div id="titleInputBox">
+<div>題名</div>
+<input id="titleInput">
+<button id="titleSaveBtn" onclick="saveTitle()">保存</button>
+</div>
+
+<div id="photoView">
+<div id="photoTitle"></div>
+<img id="photoImg">
+<div id="closePhoto" onclick="closePhoto()">閉じる</div>
+</div>
+
 <div id="dir"></div>
 <div id="eta"></div>
 <div id="arrow">▽</div>
 <div id="speedNow"></div>
-<div id="followBox"><label><input type="checkbox" id="followMode"> 追従</label></div>
-<div id="searchBox">
-<input id="word" placeholder="店を検索" style="width:200px;">
-<button onclick="searchStore()">検索</button>
-</div>
-<div id="twoPointBox">
-<label><input type="checkbox" id="twoPointMode"> 2点ルート</label>
-</div>
+
+<div id="followBox"><label><input type="checkbox" id="followMode">追従</label></div>
+<div id="twoPointBox"><label><input type="checkbox" id="twoPointMode">2点ルート</label></div>
+
 <div id="viewBox">
 <select id="viewSelect" onchange="changeView()">
 <option value="osm">OpenStreetMap</option>
@@ -41,7 +57,9 @@
 <option value="gsi_ortho">地理院地図 オルソ</option>
 </select>
 </div>
-<div id="results"></div>
+
+<input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none">
+
 <script>
 var map=L.map('map').setView([35,135],5);
 var layers={
@@ -50,23 +68,27 @@ gsi_light:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png
 gsi_ortho:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg',{maxZoom:18})
 };
 layers.osm.addTo(map);
+
 function changeView(){
 var v=document.getElementById("viewSelect").value;
 Object.values(layers).forEach(l=>map.removeLayer(l));
 layers[v].addTo(map);
 }
+
 var marker=null;
 var routeLine=null;
 var currentPos=null;
 var steps=[];
-var storeMarkers=[];
 var lastTapPos=null;
 var lastSpeedPos=null;
 var lastSpeedTime=null;
 
+var tempPhoto=null;
+
 navigator.geolocation.watchPosition(function(p){
 var now=[p.coords.latitude,p.coords.longitude];
 var nowTime=Date.now();
+
 if(lastSpeedPos){
 var dx=now[0]-lastSpeedPos[0];
 var dy=now[1]-lastSpeedPos[1];
@@ -78,17 +100,22 @@ document.getElementById("speedNow").innerHTML="時速 "+speed.toFixed(1)+" km/h"
 window.autoSpeed=speed;
 }
 }
+
 lastSpeedPos=now;
 lastSpeedTime=nowTime;
+
 currentPos=now;
+
 if(!marker){
 marker=L.marker(currentPos).addTo(map);
 }else{
 marker.setLatLng(currentPos);
 }
+
 if(document.getElementById("followMode").checked){
 map.setView(currentPos,17);
 }
+
 if(steps.length>0){
 var next=null;
 var dist=999999;
@@ -105,27 +132,11 @@ if(m.type==="straight")t="直進";
 document.getElementById("dir").innerHTML=t;
 }
 }
-},function(){
-document.getElementById("dir").innerHTML="位置情報をオンにしますか？<div><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
 });
-
-function gpsYes(){location.reload();}
-function gpsNo(){document.getElementById("dir").innerHTML="位置情報がオフです";}
 
 window.addEventListener("deviceorientation",function(e){
 document.getElementById("arrow").style.transform="rotate("+e.alpha+"deg)";
 });
-
-function clearStores(){
-storeMarkers.forEach(m=>map.removeLayer(m));
-storeMarkers=[];
-}
-
-function clearRoute(){
-if(routeLine)map.removeLayer(routeLine);
-routeLine=null;
-document.getElementById("eta").innerHTML="";
-}
 
 function calcTime(distance){
 var sp=window.autoSpeed||20;
@@ -135,46 +146,15 @@ var m=Math.round(totalMinutes%60);
 return (h>0?h+"時間":"")+m+"分";
 }
 
-function searchStore(){
-clearStores();
-clearRoute();
-var box=document.getElementById("results");
-box.innerHTML="";
-box.style.display="none";
-var w=document.getElementById("word").value;
-fetch("https://nominatim.openstreetmap.org/search?format=json&q="+w)
-.then(r=>r.json())
-.then(d=>{
-box.innerHTML="";
-box.style.display="block";
-d.forEach(function(s){
-var item=document.createElement("div");
-item.className="resultItem";
-item.innerHTML=s.display_name;
-item.onclick=function(){
-goTo([s.lat,s.lon]);
-box.style.display="none";
-};
-box.appendChild(item);
-var m=L.marker([s.lat,s.lon]).addTo(map);
-storeMarkers.push(m);
-m.on("click",function(){goTo([s.lat,s.lon]);});
-});
-});
-}
-
 function goTo(dest){
-clearRoute();
-if(!currentPos){
-document.getElementById("dir").innerHTML="位置情報をオンにしますか？<div><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
-return;
-}
+if(!currentPos)return;
 var url=`https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${currentPos[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
 fetch(url).then(r=>r.json()).then(d=>{
 steps=d.routes[0].legs[0].steps;
 var distance=d.routes[0].distance;
 document.getElementById("eta").innerHTML=calcTime(distance);
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+if(routeLine)map.removeLayer(routeLine);
 routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 });
 }
@@ -229,9 +209,61 @@ lastTapPos=tap;
 return;
 }
 lastTapPos=tap;
-clearStores();
 goTo(tap);
 });
+
+function openCamera(){
+document.getElementById("cameraInput").click();
+}
+
+document.getElementById("cameraInput").addEventListener("change",function(e){
+var file=e.target.files[0];
+if(!file)return;
+var reader=new FileReader();
+reader.onload=function(ev){
+tempPhoto={lat:currentPos[0],lon:currentPos[1],img:ev.target.result};
+document.getElementById("titleInputBox").style.display="block";
+};
+reader.readAsDataURL(file);
+});
+
+function saveTitle(){
+var title=document.getElementById("titleInput").value;
+document.getElementById("titleInput").value="";
+document.getElementById("titleInputBox").style.display="none";
+tempPhoto.title=title;
+savePhoto(tempPhoto);
+addPhotoMarker(tempPhoto);
+tempPhoto=null;
+}
+
+function savePhoto(p){
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+arr.push(p);
+localStorage.setItem("photos",JSON.stringify(arr));
+}
+
+function loadPhotos(){
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+arr.forEach(function(p){
+addPhotoMarker(p);
+});
+}
+
+function addPhotoMarker(p){
+var m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:"■",className:"",iconSize:[20,20]})}).addTo(map);
+m.on("click",function(){
+document.getElementById("photoTitle").innerText=p.title;
+document.getElementById("photoImg").src=p.img;
+document.getElementById("photoView").style.display="block";
+});
+}
+
+function closePhoto(){
+document.getElementById("photoView").style.display="none";
+}
+
+loadPhotos();
 </script>
 </body>
 </html>
