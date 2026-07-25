@@ -2,13 +2,16 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPSMS</title>
+<title>GPS_MAP_CAMERA_SAVE_TITLE</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
 body{margin:0;overflow:hidden;}
 #map{position:absolute;left:0;top:0;width:100%;height:100vh;}
-#cameraBtn{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
+#cameraBtn{position:absolute;top:10px;left:600px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
+#cameraBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;text-align:center;}
+#cameraVideo{width:300px;height:auto;}
+#cameraShoot{font-size:20px;margin-top:10px;}
 #titleInputBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;}
 #titleInput{font-size:20px;width:300px;}
 #titleSaveBtn{font-size:20px;margin-top:10px;}
@@ -28,7 +31,13 @@ body{margin:0;overflow:hidden;}
 <body>
 
 <div id="map"></div>
+
 <div id="cameraBtn" onclick="openCamera()">📷 カメラ</div>
+
+<div id="cameraBox">
+<video id="cameraVideo" autoplay></video>
+<button id="cameraShoot" onclick="shootPhoto()">撮影</button>
+</div>
 
 <div id="titleInputBox">
 <div>題名</div>
@@ -57,8 +66,6 @@ body{margin:0;overflow:hidden;}
 <option value="gsi_ortho">地理院地図 オルソ</option>
 </select>
 </div>
-
-<input id="cameraInput" type="file" accept="image/*" capture="environment" style="display:none">
 
 <script>
 var map=L.map('map').setView([35,135],5);
@@ -213,19 +220,23 @@ goTo(tap);
 });
 
 function openCamera(){
-document.getElementById("cameraInput").click();
+navigator.mediaDevices.getUserMedia({video:true}).then(function(stream){
+document.getElementById("cameraVideo").srcObject=stream;
+document.getElementById("cameraBox").style.display="block";
+});
 }
 
-document.getElementById("cameraInput").addEventListener("change",function(e){
-var file=e.target.files[0];
-if(!file)return;
-var reader=new FileReader();
-reader.onload=function(ev){
-tempPhoto={lat:currentPos[0],lon:currentPos[1],img:ev.target.result};
+function shootPhoto(){
+var video=document.getElementById("cameraVideo");
+var canvas=document.createElement("canvas");
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
+canvas.getContext("2d").drawImage(video,0,0);
+var imgData=canvas.toDataURL("image/png");
+tempPhoto={lat:currentPos[0],lon:currentPos[1],img:imgData};
+document.getElementById("cameraBox").style.display="none";
 document.getElementById("titleInputBox").style.display="block";
-};
-reader.readAsDataURL(file);
-});
+}
 
 function saveTitle(){
 var title=document.getElementById("titleInput").value;
