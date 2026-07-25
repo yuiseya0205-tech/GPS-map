@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="google-site-verification" content="WYVgAFbhD_nKs5PT-tZCQ07SoEefCBqN049VzFy6dQw" />
 <title>GM_CT_S</title>
+<meta name="description" content="GM_CT_S 地図GPSルート案内写真記録ウェブアプリ">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -31,35 +32,31 @@ body{margin:0;overflow:hidden;}
 </head>
 <body>
 
+<h1 style="display:none;">GM_CT_S</h1>
+<p style="display:none;">GM_CT_S 地図GPSルート案内写真記録ウェブアプリ</p>
+
 <div id="map"></div>
-
 <div id="cameraBtn" onclick="openCamera()">📷 カメラ</div>
-
 <div id="cameraBox">
 <video id="cameraVideo" autoplay></video>
 <button id="cameraShoot" onclick="shootPhoto()">撮影</button>
 </div>
-
 <div id="titleInputBox">
 <div>題名</div>
 <input id="titleInput">
 <button id="titleSaveBtn" onclick="saveTitle()">保存</button>
 </div>
-
 <div id="photoView">
 <div id="photoTitle"></div>
 <img id="photoImg">
 <div id="closePhoto" onclick="closePhoto()">閉じる</div>
 </div>
-
 <div id="dir"></div>
 <div id="eta"></div>
 <div id="arrow">▽</div>
 <div id="speedNow"></div>
-
 <div id="followBox"><label><input type="checkbox" id="followMode">追従</label></div>
 <div id="twoPointBox"><label><input type="checkbox" id="twoPointMode">2点ルート</label></div>
-
 <div id="viewBox">
 <select id="viewSelect" onchange="changeView()">
 <option value="osm">OpenStreetMap</option>
@@ -90,13 +87,11 @@ var steps=[];
 var lastTapPos=null;
 var lastSpeedPos=null;
 var lastSpeedTime=null;
-
 var tempPhoto=null;
 
 navigator.geolocation.watchPosition(function(p){
 var now=[p.coords.latitude,p.coords.longitude];
 var nowTime=Date.now();
-
 if(lastSpeedPos){
 var dx=now[0]-lastSpeedPos[0];
 var dy=now[1]-lastSpeedPos[1];
@@ -108,22 +103,17 @@ document.getElementById("speedNow").innerHTML="時速 "+speed.toFixed(1)+" km/h"
 window.autoSpeed=speed;
 }
 }
-
 lastSpeedPos=now;
 lastSpeedTime=nowTime;
-
 currentPos=now;
-
 if(!marker){
 marker=L.marker(currentPos).addTo(map);
 }else{
 marker.setLatLng(currentPos);
 }
-
 if(document.getElementById("followMode").checked){
 map.setView(currentPos,17);
 }
-
 if(steps.length>0){
 var next=null;
 var dist=999999;
