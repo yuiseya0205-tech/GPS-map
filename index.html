@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GMS</title>
+<title>GPS_MAP_System</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -61,23 +61,39 @@ var storeMarkers=[];
 var lastTapPos=null;
 var lastSpeedPos=null;
 var lastSpeedTime=null;
+var firstCenter=true;
+
 navigator.geolocation.watchPosition(function(p){
 var now=[p.coords.latitude,p.coords.longitude];
 var nowTime=Date.now();
+
 if(lastSpeedPos){
 var dx=now[0]-lastSpeedPos[0];
 var dy=now[1]-lastSpeedPos[1];
 var dist=Math.hypot(dx,dy)*111000;
 var dt=(nowTime-lastSpeedTime)/1000;
+if(dt>0){
 var speed=(dist/dt)*3.6;
 document.getElementById("speedNow").innerHTML="時速 "+speed.toFixed(1)+" km/h";
 window.autoSpeed=speed;
 }
+}
+
 lastSpeedPos=now;
 lastSpeedTime=nowTime;
+
 currentPos=now;
-if(!marker){marker=L.marker(currentPos).addTo(map);}else{marker.setLatLng(currentPos);}
+
+if(!marker){
+marker=L.marker(currentPos).addTo(map);
+if(firstCenter){
 map.setView(currentPos,17);
+firstCenter=false;
+}
+}else{
+marker.setLatLng(currentPos);
+}
+
 if(steps.length>0){
 var next=null;
 var dist=999999;
@@ -97,20 +113,25 @@ document.getElementById("dir").innerHTML=t;
 },function(){
 document.getElementById("dir").innerHTML="位置情報をオンにしますか？<div><span class='btn' onclick='gpsYes()'>はい</span><span class='btn' onclick='gpsNo()'>いいえ</span></div>";
 });
+
 function gpsYes(){location.reload();}
 function gpsNo(){document.getElementById("dir").innerHTML="位置情報がオフです";}
+
 window.addEventListener("deviceorientation",function(e){
 document.getElementById("arrow").style.transform="rotate("+e.alpha+"deg)";
 });
+
 function clearStores(){
 storeMarkers.forEach(m=>map.removeLayer(m));
 storeMarkers=[];
 }
+
 function clearRoute(){
 if(routeLine)map.removeLayer(routeLine);
 routeLine=null;
 document.getElementById("eta").innerHTML="";
 }
+
 function calcTime(distance){
 var sp=window.autoSpeed||20;
 var totalMinutes=(distance/(sp*1000))*60;
@@ -118,6 +139,7 @@ var h=Math.floor(totalMinutes/60);
 var m=Math.round(totalMinutes%60);
 return (h>0?h+"時間":"")+m+"分";
 }
+
 function searchStore(){
 clearStores();
 clearRoute();
@@ -145,6 +167,7 @@ m.on("click",function(){goTo([s.lat,s.lon]);});
 });
 });
 }
+
 function goTo(dest){
 clearRoute();
 if(!currentPos){
@@ -160,10 +183,12 @@ var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 });
 }
+
 var twoPointMode=false;
 var startPoint=null;
 var endPoint=null;
 var redLine=null;
+
 document.getElementById("twoPointMode").addEventListener("change",function(){
 twoPointMode=this.checked;
 startPoint=null;
@@ -174,6 +199,7 @@ if(routeLine)map.removeLayer(routeLine);
 routeLine=null;
 document.getElementById("eta").innerHTML="";
 });
+
 map.on('click',function(e){
 var tap=[e.latlng.lat,e.latlng.lng];
 if(twoPointMode){
