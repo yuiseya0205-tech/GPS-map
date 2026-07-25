@@ -210,10 +210,7 @@ goTo(tap);
 });
 
 async function openCamera(){
-const devices=await navigator.mediaDevices.enumerateDevices();
-const cam=devices.find(d=>d.kind==="videoinput"&&d.label.includes("HD"));
-const id=cam?cam.deviceId:undefined;
-const stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:id?{exact:id}:undefined}});
+const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
 document.getElementById("cameraVideo").srcObject=stream;
 document.getElementById("cameraBox").style.display="block";
 }
