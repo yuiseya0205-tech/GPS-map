@@ -2,7 +2,8 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GMS</title>
+<title>GPS_MAP_SYSTEM</title>
+<meta name="description" content="G_P_S_S_P 地図GPSルート案内写真記録ウェブアプリ">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -12,6 +13,7 @@ body{margin:0;overflow:hidden;}
 #cameraBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;text-align:center;}
 #cameraVideo{width:300px;height:auto;}
 #cameraShoot{font-size:20px;margin-top:10px;}
+#cameraClose{font-size:20px;margin-top:10px;}
 #titleInputBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;}
 #titleInput{font-size:20px;width:300px;}
 #titleSaveBtn{font-size:20px;margin-top:10px;}
@@ -30,14 +32,12 @@ body{margin:0;overflow:hidden;}
 </head>
 <body>
 
-<h1 style="display:none;">GM_CT_S</h1>
-<p style="display:none;">GM_CT_S 地図GPSルート案内写真記録ウェブアプリ</p>
-
 <div id="map"></div>
 <div id="cameraBtn" onclick="openCamera()">📷 カメラ</div>
 <div id="cameraBox">
 <video id="cameraVideo" autoplay></video>
 <button id="cameraShoot" onclick="shootPhoto()">撮影</button>
+<button id="cameraClose" onclick="closeCamera()">閉じる</button>
 </div>
 <div id="titleInputBox">
 <div>題名</div>
@@ -86,6 +86,7 @@ var lastTapPos=null;
 var lastSpeedPos=null;
 var lastSpeedTime=null;
 var tempPhoto=null;
+var cameraStream=null;
 
 navigator.geolocation.watchPosition(function(p){
 var now=[p.coords.latitude,p.coords.longitude];
@@ -209,9 +210,16 @@ goTo(tap);
 });
 
 async function openCamera(){
-const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
-document.getElementById("cameraVideo").srcObject=stream;
+cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+document.getElementById("cameraVideo").srcObject=cameraStream;
 document.getElementById("cameraBox").style.display="block";
+}
+
+function closeCamera(){
+if(cameraStream){
+cameraStream.getTracks().forEach(t=>t.stop());
+}
+document.getElementById("cameraBox").style.display="none";
 }
 
 function shootPhoto(){
@@ -222,7 +230,7 @@ canvas.height=video.videoHeight;
 canvas.getContext("2d").drawImage(video,0,0);
 var imgData=canvas.toDataURL("image/png");
 tempPhoto={lat:currentPos[0],lon:currentPos[1],img:imgData};
-document.getElementById("cameraBox").style.display="none";
+closeCamera();
 document.getElementById("titleInputBox").style.display="block";
 }
 
