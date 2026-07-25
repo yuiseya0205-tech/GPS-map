@@ -2,7 +2,6 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="google-site-verification" content="WYVgAFbhD_nKs5PT-tZCQ07SoEefCBqN049VzFy6dQw" />
 <title>G_P_S_S_P_G</title>
 <meta name="description" content="G_P_S_S_P 地図GPSルート案内写真記録ウェブアプリ">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
@@ -19,7 +18,7 @@ body{margin:0;overflow:hidden;}
 #titleSaveBtn{font-size:20px;margin-top:10px;}
 #photoView{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:white;padding:10px;display:none;text-align:center;}
 #photoTitle{font-size:24px;margin-bottom:10px;}
-#photoView img{max-width:80vw;max-height:80vh;}
+#photoView img{max-width:90vw;max-height:80vh;width:auto;height:auto;object-fit:contain;}
 #closePhoto{font-size:20px;margin-top:10px;}
 #dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
 #eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
@@ -210,11 +209,13 @@ lastTapPos=tap;
 goTo(tap);
 });
 
-function openCamera(){
-navigator.mediaDevices.getUserMedia({video:true}).then(function(stream){
+async function openCamera(){
+const devices=await navigator.mediaDevices.enumerateDevices();
+const cam=devices.find(d=>d.kind==="videoinput"&&d.label.includes("HD"));
+const id=cam?cam.deviceId:undefined;
+const stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:id?{exact:id}:undefined}});
 document.getElementById("cameraVideo").srcObject=stream;
 document.getElementById("cameraBox").style.display="block";
-});
 }
 
 function shootPhoto(){
