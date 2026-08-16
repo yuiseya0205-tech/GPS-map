@@ -5,6 +5,8 @@
 <title>GPS_MAP_SYSTEM</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/ARButton.js"></script>
 <style>
 body{margin:0;overflow:hidden;}
 #map{position:absolute;left:0;top:0;width:100%;height:100vh;}
@@ -28,6 +30,7 @@ body{margin:0;overflow:hidden;}
 #followBox{position:absolute;top:10px;left:300px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
 #twoPointBox{position:absolute;top:10px;left:450px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
 #viewBox{position:absolute;top:10px;left:150px;background:white;padding:5px;z-index:9999;}
+#arBtn{position:absolute;top:10px;left:10px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
 </style>
 </head>
 <body>
@@ -63,6 +66,7 @@ body{margin:0;overflow:hidden;}
 <option value="gsi_ortho">地理院地図 オルソ</option>
 </select>
 </div>
+<div id="arBtn" onclick="startAR()">AR</div>
 
 <script>
 var map=L.map('map').setView([35,135],5);
@@ -89,6 +93,7 @@ var lastSpeedTime=null;
 var tempPhoto=null;
 var cameraStream=null;
 var cameraMode="environment";
+var routeCoords=null;
 
 navigator.geolocation.watchPosition(function(p){
 var now=[p.coords.latitude,p.coords.longitude];
@@ -117,10 +122,10 @@ map.setView(currentPos,17);
 }
 if(steps.length>0){
 var next=null;
-var dist=999999;
+var dist2=999999;
 steps.forEach(function(s){
 var d=Math.hypot(currentPos[0]-s.maneuver.location[1],currentPos[1]-s.maneuver.location[0]);
-if(d<dist){dist=d;next=s;}
+if(d<dist2){dist2=d;next=s;}
 });
 if(next){
 var m=next.maneuver;
@@ -153,6 +158,7 @@ steps=d.routes[0].legs[0].steps;
 var distance=d.routes[0].distance;
 document.getElementById("eta").innerHTML=calcTime(distance);
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+routeCoords=coords;
 if(routeLine)map.removeLayer(routeLine);
 routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 });
@@ -171,6 +177,7 @@ if(redLine)map.removeLayer(redLine);
 redLine=null;
 if(routeLine)map.removeLayer(routeLine);
 routeLine=null;
+routeCoords=null;
 document.getElementById("eta").innerHTML="";
 });
 
@@ -191,6 +198,7 @@ var url=`https://router.project-osrm.org/route/v1/driving/${startPoint[1]},${sta
 fetch(url).then(r=>r.json()).then(d=>{
 var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 redLine=L.polyline(coords,{color:'red',weight:5}).addTo(map);
+routeCoords=coords;
 var distance=d.routes[0].distance;
 document.getElementById("eta").innerHTML=calcTime(distance);
 });
@@ -279,6 +287,41 @@ document.getElementById("photoView").style.display="none";
 }
 
 loadPhotos();
+
+var renderer=null;
+var scene=null;
+var camera=null;
+var arLine=null;
+
+function startAR(){
+if(!renderer){
+renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.xr.enabled=true;
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(ARButton.createButton(renderer));
+scene=new THREE.Scene();
+camera=new THREE.PerspectiveCamera();
+renderer.setAnimationLoop(function(t,frame){
+if(!currentPos||!routeCoords)return;
+if(!arLine){
+var pts=[];
+for(var i=0;i<routeCoords.length;i++){
+var lat=routeCoords[i][0];
+var lon=routeCoords[i][1];
+var dx=(lon-currentPos[1])*90000;
+var dy=(lat-currentPos[0])*110000;
+pts.push(new THREE.Vector3(dx,0,-dy));
+}
+var geo=new THREE.BufferGeometry().setFromPoints(pts);
+var mat=new THREE.LineBasicMaterial({color:0x0000ff});
+arLine=new THREE.Line(geo,mat);
+scene.add(arLine);
+}
+renderer.render(scene,camera);
+});
+}
+}
 </script>
 </body>
 </html>
