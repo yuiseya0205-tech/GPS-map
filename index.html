@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_MAP_YUI_SYSTEM</title>
+<title>GPS_MAP_SYSTEM</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -23,7 +23,7 @@ body{margin:0;overflow:hidden;}
 #closePhoto{font-size:20px;margin-top:10px;}
 #dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
 #eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
-#arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;}
+#arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;transition:0.2s;}
 #speedNow{position:absolute;bottom:60px;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
 #followBox{position:absolute;top:10px;left:300px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
 #twoPointBox{position:absolute;top:10px;left:450px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
@@ -126,10 +126,12 @@ if(d<dist){dist=d;next=s;}
 if(next){
 var m=next.maneuver;
 var t="";
-if(m.modifier==="right")t="右折です";
-if(m.modifier==="left")t="左折です";
-if(m.type==="straight")t="直進です";
+var rot=0;
+if(m.modifier==="right"){t="右折です";rot=90;}
+if(m.modifier==="left"){t="左折です";rot=-90;}
+if(m.type==="straight"){t="直進です";rot=180;}
 document.getElementById("dir").innerHTML=t;
+document.getElementById("arrow").style.transform="rotate("+rot+"deg)";
 if(t!=="" && t!==lastVoice){
 lastVoice=t;
 var u=new SpeechSynthesisUtterance(t);
@@ -138,10 +140,6 @@ speechSynthesis.speak(u);
 }
 }
 }
-});
-
-window.addEventListener("deviceorientation",function(e){
-document.getElementById("arrow").style.transform="rotate("+e.alpha+"deg)";
 });
 
 function calcTime(distance){
@@ -165,9 +163,11 @@ routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
 if(steps.length>0){
 var m=steps[0].maneuver;
 var t="";
-if(m.modifier==="right")t="右に曲がります";
-if(m.modifier==="left")t="左に曲がります";
-if(m.type==="straight")t="直進です";
+var rot=0;
+if(m.modifier==="right"){t="右に曲がります";rot=90;}
+if(m.modifier==="left"){t="左に曲がります";rot=-90;}
+if(m.type==="straight"){t="直進です";rot=180;}
+document.getElementById("arrow").style.transform="rotate("+rot+"deg)";
 if(t!==""){
 lastVoice=t;
 var u=new SpeechSynthesisUtterance(t);
@@ -218,9 +218,11 @@ document.getElementById("eta").innerHTML=calcTime(distance);
 if(steps.length>0){
 var m=steps[0].maneuver;
 var t="";
-if(m.modifier==="right")t="右に曲がります";
-if(m.modifier==="left")t="左に曲がります";
-if(m.type==="straight")t="直進です";
+var rot=0;
+if(m.modifier==="right"){t="右に曲がります";rot=90;}
+if(m.modifier==="left"){t="左に曲がります";rot=-90;}
+if(m.type==="straight"){t="直進です";rot=180;}
+document.getElementById("arrow").style.transform="rotate("+rot+"deg)";
 if(t!==""){
 lastVoice=t;
 var u=new SpeechSynthesisUtterance(t);
