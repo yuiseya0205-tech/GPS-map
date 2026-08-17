@@ -345,14 +345,31 @@ addPhotoMarker(p);
 }
 
 function addPhotoMarker(p){
-var m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:"■",className:"",iconSize:[20,20]})}).addTo(map);
-m.on("click",function(){
-if(confirm("削除しますか？")){
-deletePhoto(p);
-map.removeLayer(m);
-saveBin();
-return;
+    var m = L.marker([p.lat, p.lon], {
+        icon: L.divIcon({
+            html: "■",
+            className: "photo-marker",
+            iconSize: [20,20]
+        })
+    }).addTo(map);
+
+
+    m.on("click", function(){
+        document.getElementById("photoTitle").innerText = p.title;
+        document.getElementById("photoImg").src = p.img;
+        document.getElementById("photoView").style.display = "block";
+    });
+
+
+    m.on("contextmenu", function(){
+        if(confirm("削除しますか？")){
+            deletePhoto(p);
+            map.removeLayer(m);
+            saveBin();
+        }
+    });
 }
+
 document.getElementById("photoTitle").innerText=p.title;
 document.getElementById("photoImg").src=p.img;
 document.getElementById("photoView").style.display="block";
