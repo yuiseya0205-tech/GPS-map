@@ -90,7 +90,6 @@ var tempPhoto=null;
 var cameraStream=null;
 var cameraMode="environment";
 var lastVoice="";
-
 let smoothSpeed=0;
 let targetSpeed=0;
 
@@ -296,6 +295,7 @@ document.getElementById("titleInputBox").style.display="none";
 tempPhoto.title=title;
 savePhoto(tempPhoto);
 addPhotoMarker(tempPhoto);
+sendOnlinePoint(tempPhoto.lat,tempPhoto.lon,tempPhoto.title);
 tempPhoto=null;
 }
 
@@ -315,17 +315,62 @@ addPhotoMarker(p);
 function addPhotoMarker(p){
 var m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:"■",className:"",iconSize:[20,20]})}).addTo(map);
 m.on("click",function(){
+if(confirm("削除しますか？")){
+deletePhoto(p);
+map.removeLayer(m);
+sendDeleteOnlinePoint(p.lat,p.lon);
+return;
+}
 document.getElementById("photoTitle").innerText=p.title;
 document.getElementById("photoImg").src=p.img;
 document.getElementById("photoView").style.display="block";
 });
 }
 
+function deletePhoto(p){
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+arr=arr.filter(x=>!(x.lat===p.lat&&x.lon===p.lon&&x.title===p.title));
+localStorage.setItem("photos",JSON.stringify(arr));
+}
+
 function closePhoto(){
 document.getElementById("photoView").style.display="none";
 }
 
+function sendOnlinePoint(lat,lon,title){
+fetch("https://your-server.example.com/addPoint",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({lat:lat,lon:lon,title:title})
+});
+}
+
+function sendDeleteOnlinePoint(lat,lon){
+fetch("https://your-server.example.com/deletePoint",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({lat:lat,lon:lon})
+});
+}
+
+function loadOnlinePoints(){
+fetch("https://your-server.example.com/getPoints")
+.then(r=>r.json())
+.then(arr=>{
+arr.forEach(function(p){
+var m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:"■",className:"",iconSize:[20,20]})}).addTo(map);
+m.on("click",function(){
+if(confirm("削除しますか？")){
+sendDeleteOnlinePoint(p.lat,p.lon);
+map.removeLayer(m);
+}
+});
+});
+});
+}
+
 loadPhotos();
+loadOnlinePoints();
 </script>
 </body>
 </html>
