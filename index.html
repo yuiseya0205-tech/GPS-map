@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_MAP_SYSTEM</title>
+<title>GPS_MAP_SYSTEM_YUI_SEYAS_QR_TRACK</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -28,6 +28,10 @@ body{margin:0;overflow:hidden;}
 #followBox{position:absolute;top:10px;left:300px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
 #twoPointBox{position:absolute;top:10px;left:450px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
 #viewBox{position:absolute;top:10px;left:150px;background:white;padding:5px;z-index:9999;}
+#qrBtn{position:absolute;top:10px;left:750px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
+#qrBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;text-align:center;}
+#qrImg{width:250px;height:250px;}
+#qrClose{font-size:20px;margin-top:10px;}
 </style>
 </head>
 <body>
@@ -63,8 +67,32 @@ body{margin:0;overflow:hidden;}
 <option value="gsi_ortho">地理院地図 オルソ</option>
 </select>
 </div>
+<div id="qrBtn" onclick="openQR()">QRコード表示</div>
+<div id="qrBox">
+<img id="qrImg">
+<button id="qrClose" onclick="closeQR()">閉じる</button>
+</div>
 
 <script>
+const JSONBIN_URL="https://api.jsonbin.io/v3/b/6a829d2cf5f4af5e291f1a4e";
+const JSONBIN_KEY="$2a$10$DKqFC6yTYkzmTbKXVnnDhuV/nvXdKOTSi8rMMHNmicw8l/DohMcE2";
+
+function getQueryId(){
+var s=location.search;
+if(!s)return null;
+var p=new URLSearchParams(s);
+return p.get("id");
+}
+
+function genId(){
+return"ID_"+Math.random().toString(36).slice(2)+Date.now().toString(36);
+}
+
+var storedId=localStorage.getItem("targetId");
+var queryId=getQueryId();
+var targetId=storedId||queryId||genId();
+localStorage.setItem("targetId",targetId);
+
 var map=L.map('map').setView([35,135],5);
 var layers={
 osm:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}),
@@ -92,6 +120,7 @@ var cameraMode="environment";
 var lastVoice="";
 let smoothSpeed=0;
 let targetSpeed=0;
+var redMarkers=[];
 
 function smoothLoop(){
 smoothSpeed+=(targetSpeed-smoothSpeed)*0.15;
@@ -141,13 +170,16 @@ if(m.modifier==="left"){t="左折です";rot=-90;}
 if(m.type==="straight"){t="直進です";rot=180;}
 document.getElementById("dir").innerHTML=t;
 document.getElementById("arrow").style.transform="rotate("+rot+"deg)";
-if(t!=="" && t!==lastVoice){
+if(t!==""&&t!==lastVoice){
 lastVoice=t;
 var u=new SpeechSynthesisUtterance(t);
 u.lang="ja-JP";
 speechSynthesis.speak(u);
 }
 }
+}
+if(queryId){
+sendMyPositionToBin();
 }
 });
 
@@ -156,7 +188,7 @@ var sp=window.autoSpeed||20;
 var totalMinutes=(distance/(sp*1000))*60;
 var h=Math.floor(totalMinutes/60);
 var m=Math.round(totalMinutes%60);
-return (h>0?h+"時間":"")+m+"分";
+return(h>0?h+"時間":"")+m+"分";
 }
 
 function goTo(dest){
@@ -295,7 +327,7 @@ document.getElementById("titleInputBox").style.display="none";
 tempPhoto.title=title;
 savePhoto(tempPhoto);
 addPhotoMarker(tempPhoto);
-sendOnlinePoint(tempPhoto.lat,tempPhoto.lon,tempPhoto.title);
+saveBin();
 tempPhoto=null;
 }
 
@@ -318,7 +350,7 @@ m.on("click",function(){
 if(confirm("削除しますか？")){
 deletePhoto(p);
 map.removeLayer(m);
-sendDeleteOnlinePoint(p.lat,p.lon);
+saveBin();
 return;
 }
 document.getElementById("photoTitle").innerText=p.title;
@@ -337,40 +369,109 @@ function closePhoto(){
 document.getElementById("photoView").style.display="none";
 }
 
-function sendOnlinePoint(lat,lon,title){
-fetch("https://your-server.example.com/addPoint",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({lat:lat,lon:lon,title:title})
-});
+function openQR(){
+var url=location.origin+location.pathname+"?id="+encodeURIComponent(targetId);
+var qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data="+encodeURIComponent(url);
+document.getElementById("qrImg").src=qrUrl;
+document.getElementById("qrBox").style.display="block";
 }
 
-function sendDeleteOnlinePoint(lat,lon){
-fetch("https://your-server.example.com/deletePoint",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({lat:lat,lon:lon})
-});
+function closeQR(){
+document.getElementById("qrBox").style.display="none";
 }
 
-function loadOnlinePoints(){
-fetch("https://your-server.example.com/getPoints")
+function getLocalPoints(){
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+return arr.map(p=>({lat:p.lat,lon:p.lon,title:p.title}));
+}
+
+function saveBin(){
+var points=getLocalPoints();
+fetch(JSONBIN_URL,{
+method:"GET",
+headers:{"X-Master-Key":JSONBIN_KEY}
+})
 .then(r=>r.json())
-.then(arr=>{
-arr.forEach(function(p){
+.then(data=>{
+var record=data.record||{};
+record.targetId=targetId;
+record.points=points;
+record.targets=record.targets||[];
+fetch(JSONBIN_URL,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json",
+"X-Master-Key":JSONBIN_KEY
+},
+body:JSON.stringify(record)
+});
+})
+.catch(()=>{
+var record={targetId:targetId,points:getLocalPoints(),targets:[]};
+fetch(JSONBIN_URL,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json",
+"X-Master-Key":JSONBIN_KEY
+},
+body:JSON.stringify(record)
+});
+});
+}
+
+function loadBin(){
+fetch(JSONBIN_URL,{
+headers:{"X-Master-Key":JSONBIN_KEY}
+})
+.then(r=>r.json())
+.then(data=>{
+var record=data.record||{};
+if(record.points){
+record.points.forEach(function(p){
 var m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:"■",className:"",iconSize:[20,20]})}).addTo(map);
-m.on("click",function(){
-if(confirm("削除しますか？")){
-sendDeleteOnlinePoint(p.lat,p.lon);
-map.removeLayer(m);
+});
+}
+if(record.targets){
+redMarkers.forEach(m=>map.removeLayer(m));
+redMarkers=[];
+record.targets.forEach(function(t){
+if(t.id===targetId){
+var m=L.marker([t.lat,t.lon],{icon:L.divIcon({html:"●",className:"",iconSize:[20,20],style:"color:red"})}).addTo(map);
+redMarkers.push(m);
 }
 });
+}
+});
+}
+
+function sendMyPositionToBin(){
+if(!currentPos)return;
+fetch(JSONBIN_URL,{
+headers:{"X-Master-Key":JSONBIN_KEY}
+})
+.then(r=>r.json())
+.then(data=>{
+var record=data.record||{};
+record.targetId=record.targetId||targetId;
+record.points=record.points||[];
+record.targets=record.targets||[];
+var meIndex=record.targets.findIndex(t=>t.id===targetId);
+var obj={id:targetId,lat:currentPos[0],lon:currentPos[1]};
+if(meIndex>=0)record.targets[meIndex]=obj;else record.targets.push(obj);
+fetch(JSONBIN_URL,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json",
+"X-Master-Key":JSONBIN_KEY
+},
+body:JSON.stringify(record)
 });
 });
 }
 
 loadPhotos();
-loadOnlinePoints();
+loadBin();
+setInterval(loadBin,5000);
 </script>
 </body>
 </html>
