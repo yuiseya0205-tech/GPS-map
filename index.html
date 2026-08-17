@@ -91,6 +91,16 @@ var cameraStream=null;
 var cameraMode="environment";
 var lastVoice="";
 
+let smoothSpeed=0;
+let targetSpeed=0;
+
+function smoothLoop(){
+smoothSpeed+=(targetSpeed-smoothSpeed)*0.15;
+document.getElementById("speedNow").innerHTML="時速 "+smoothSpeed.toFixed(1)+" km/h";
+requestAnimationFrame(smoothLoop);
+}
+smoothLoop();
+
 navigator.geolocation.watchPosition(function(p){
 var now=[p.coords.latitude,p.coords.longitude];
 var nowTime=Date.now();
@@ -101,7 +111,7 @@ var dist=Math.hypot(dx,dy)*111000;
 var dt=(nowTime-lastSpeedTime)/1000;
 if(dt>0){
 var speed=(dist/dt)*3.6;
-document.getElementById("speedNow").innerHTML="時速 "+speed.toFixed(1)+" km/h";
+targetSpeed=speed;
 window.autoSpeed=speed;
 }
 }
