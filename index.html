@@ -2,17 +2,13 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_MAP_YUI</title>
+<title>GPS_OFFLINE_QR_SHARE</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
 body{margin:0;overflow:hidden;}
 #map{position:absolute;left:0;top:0;width:100%;height:100vh;}
-#qrBtn{position:absolute;top:10px;left:10px;background:white;padding:10px;font-size:20px;z-index:9999;}
-#qrBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;text-align:center;}
-#qrImg{width:250px;height:250px;}
-#qrClose{font-size:20px;margin-top:10px;}
-#cameraBtn{position:absolute;top:10px;left:120px;background:white;padding:10px;font-size:20px;z-index:9999;}
+#cameraBtn{position:absolute;top:10px;left:600px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
 #cameraBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;text-align:center;}
 #cameraVideo{width:300px;height:auto;}
 #cameraShoot{font-size:20px;margin-top:10px;}
@@ -25,19 +21,25 @@ body{margin:0;overflow:hidden;}
 #photoTitle{font-size:24px;margin-bottom:10px;}
 #photoView img{max-width:90vw;max-height:80vh;width:auto;height:auto;}
 #closePhoto{font-size:20px;margin-top:10px;}
+#dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
+#eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
+#arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;transition:0.2s;}
+#speedNow{position:absolute;bottom:60px;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
+#followBox{position:absolute;top:10px;left:300px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
+#twoPointBox{position:absolute;top:10px;left:450px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
+#viewBox{position:absolute;top:10px;left:150px;background:white;padding:5px;z-index:9999;}
+#qrBtn{position:absolute;top:10px;left:750px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
+#qrBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;text-align:center;}
+#qrImg{width:250px;height:250px;}
+#qrClose{font-size:20px;margin-top:10px;}
 .photo-marker{cursor:pointer;pointer-events:auto;}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div id="qrBtn" onclick="openQR()">QR</div>
 <div id="cameraBtn" onclick="openCamera()">📷</div>
-
-<div id="qrBox">
-<img id="qrImg">
-<button id="qrClose" onclick="closeQR()">閉じる</button>
-</div>
+<div id="qrBtn" onclick="openQR()">QR</div>
 
 <div id="cameraBox">
 <video id="cameraVideo" autoplay></video>
@@ -57,6 +59,11 @@ body{margin:0;overflow:hidden;}
 <div id="closePhoto" onclick="closePhoto()">閉じる</div>
 </div>
 
+<div id="qrBox">
+<img id="qrImg">
+<button id="qrClose" onclick="closeQR()">閉じる</button>
+</div>
+
 <script>
 const BIN="https://api.jsonbin.io/v3/b/6a829d2cf5f4af5e291f1a4e";
 const KEY="$2a$10$DKqFC6yTYkzmTbKXVnnDhuV/nvXdKOTSi8rMMHNmicw8l/DohMcE2";
@@ -70,64 +77,119 @@ var shareId=storedId||queryId||genId();
 localStorage.setItem("shareId",shareId);
 
 var map=L.map('map').setView([35,135],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+var layers={
+osm:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}),
+gsi_light:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:18}),
+gsi_ortho:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg',{maxZoom:18})
+};
+layers.osm.addTo(map);
 
-var myMarker=null;
-var targetMarker=null;
+function changeView(){
+var v=document.getElementById("viewSelect").value;
+Object.values(layers).forEach(l=>map.removeLayer(l));
+layers[v].addTo(map);
+}
+
+var marker=null;
+var routeLine=null;
 var currentPos=null;
+var steps=[];
+var lastTapPos=null;
+var lastSpeedPos=null;
+var lastSpeedTime=null;
 var tempPhoto=null;
+var cameraStream=null;
+var cameraMode="environment";
+let smoothSpeed=0;
+let targetSpeed=0;
+var redMarkers=[];
+var twoPointMode=false;
+var startPoint=null;
+var endPoint=null;
+var redLine=null;
+
+function smoothLoop(){
+smoothSpeed+=(targetSpeed-smoothSpeed)*0.15;
+document.getElementById("speedNow").innerHTML="時速 "+smoothSpeed.toFixed(1);
+requestAnimationFrame(smoothLoop);
+}
+smoothLoop();
 
 navigator.geolocation.watchPosition(function(p){
-currentPos=[p.coords.latitude,p.coords.longitude];
-if(!myMarker)myMarker=L.marker(currentPos).addTo(map);
-else myMarker.setLatLng(currentPos);
-sendMyPos();
-});
-
-function sendMyPos(){
-if(!currentPos)return;
-fetch(BIN,{headers:{"X-Master-Key":KEY}})
-.then(r=>r.json())
-.then(data=>{
-var rec=data.record||{};
-rec.targets=rec.targets||[];
-var i=rec.targets.findIndex(t=>t.id===shareId);
-var o={id:shareId,lat:currentPos[0],lon:currentPos[1]};
-if(i>=0)rec.targets[i]=o;else rec.targets.push(o);
-fetch(BIN,{
-method:"PUT",
-headers:{"Content-Type":"application/json","X-Master-Key":KEY},
-body:JSON.stringify(rec)
-});
-});
+var now=[p.coords.latitude,p.coords.longitude];
+var nowTime=Date.now();
+if(lastSpeedPos){
+var dx=now[0]-lastSpeedPos[0];
+var dy=now[1]-lastSpeedPos[1];
+var dist=Math.hypot(dx,dy)*111000;
+var dt=(nowTime-lastSpeedTime)/1000;
+if(dt>0){
+var speed=(dist/dt)*3.6;
+targetSpeed=speed;
 }
-
-function loadTargets(){
-fetch(BIN,{headers:{"X-Master-Key":KEY}})
-.then(r=>r.json())
-.then(data=>{
-var rec=data.record||{};
-if(!rec.targets)return;
-var me=rec.targets.find(t=>t.id===shareId);
-if(!me)return;
-if(!targetMarker){
-targetMarker=L.marker([me.lat,me.lon],{icon:L.divIcon({html:"●",className:"",iconSize:[20,20]})}).addTo(map);
+}
+lastSpeedPos=now;
+lastSpeedTime=nowTime;
+currentPos=now;
+if(!marker){
+marker=L.marker(currentPos).addTo(map);
 }else{
-targetMarker.setLatLng([me.lat,me.lon]);
+marker.setLatLng(currentPos);
+}
+if(document.getElementById("followMode")?.checked){
+map.setView(currentPos,17);
 }
 });
-}
 
-setInterval(loadTargets,2000);
+document.getElementById("twoPointMode")?.addEventListener("change",function(){
+twoPointMode=this.checked;
+startPoint=null;
+endPoint=null;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+if(routeLine)map.removeLayer(routeLine);
+routeLine=null;
+steps=[];
+document.getElementById("eta").innerHTML="";
+});
+
+map.on('click',function(e){
+var tap=[e.latlng.lat,e.latlng.lng];
+if(twoPointMode){
+if(!startPoint){
+startPoint=tap;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+L.marker(startPoint).addTo(map);
+return;
+}
+if(!endPoint){
+endPoint=tap;
+L.marker(endPoint).addTo(map);
+var coords=[startPoint,endPoint];
+if(redLine)map.removeLayer(redLine);
+redLine=L.polyline(coords,{color:'red',weight:5}).addTo(map);
+return;
+}
+startPoint=tap;
+endPoint=null;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+L.marker(startPoint).addTo(map);
+return;
+}
+if(lastTapPos&&Math.hypot(lastTapPos[0]-tap[0],lastTapPos[1]-tap[1])<0.00005){
+lastTapPos=tap;
+return;
+}
+lastTapPos=tap;
+});
 
 async function openCamera(){
 cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:cameraMode}});
 document.getElementById("cameraVideo").srcObject=cameraStream;
 document.getElementById("cameraBox").style.display="block";
 }
-
-var cameraStream=null;
-var cameraMode="environment";
 
 function switchCamera(){
 cameraMode=cameraMode==="environment"?"user":"environment";
@@ -160,6 +222,7 @@ document.getElementById("titleInput").value="";
 document.getElementById("titleInputBox").style.display="none";
 tempPhoto.title=t;
 savePhoto(tempPhoto);
+addPhotoMarker(tempPhoto);
 tempPhoto=null;
 }
 
@@ -223,6 +286,42 @@ body:JSON.stringify(rec)
 function closePhoto(){
 document.getElementById("photoView").style.display="none";
 }
+
+function sendMyPos(){
+if(!currentPos)return;
+fetch(BIN,{headers:{"X-Master-Key":KEY}})
+.then(r=>r.json())
+.then(data=>{
+var rec=data.record||{};
+rec.targets=rec.targets||[];
+var i=rec.targets.findIndex(t=>t.id===shareId);
+var o={id:shareId,lat:currentPos[0],lon:currentPos[1]};
+if(i>=0)rec.targets[i]=o;else rec.targets.push(o);
+fetch(BIN,{
+method:"PUT",
+headers:{"Content-Type":"application/json","X-Master-Key":KEY},
+body:JSON.stringify(rec)
+});
+});
+}
+
+function loadTargets(){
+fetch(BIN,{headers:{"X-Master-Key":KEY}})
+.then(r=>r.json())
+.then(data=>{
+var rec=data.record||{};
+if(!rec.targets)return;
+var me=rec.targets.find(t=>t.id===shareId);
+if(!me)return;
+if(!targetMarker){
+targetMarker=L.marker([me.lat,me.lon],{icon:L.divIcon({html:"●",className:"",iconSize:[20,20]})}).addTo(map);
+}else{
+targetMarker.setLatLng([me.lat,me.lon]);
+}
+});
+}
+
+setInterval(loadTargets,2000);
 
 function openQR(){
 var u=location.origin+location.pathname+"?id="+encodeURIComponent(shareId);
