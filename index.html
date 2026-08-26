@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>GPS_MAP_System</title>
+<title>GPS_MAP_SYSTEM_YUI_SEYAS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -19,112 +19,275 @@ body{margin:0;overflow:hidden;}
 #titleSaveBtn{font-size:20px;margin-top:10px;}
 #photoView{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:white;padding:10px;display:none;text-align:center;}
 #photoTitle{font-size:24px;margin-bottom:10px;}
-#photoView img{max-width:90vw;max-height:80vh;width:auto;height:auto;}
+#photoView img{max-width:90vw;max-height:80vh;width:auto;height:auto;object-fit:contain;}
 #closePhoto{font-size:20px;margin-top:10px;}
+#dir{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:white;padding:10px;font-size:20px;z-index:9999;}
+#eta{position:absolute;bottom:0;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
+#arrow{width:30px;height:30px;font-size:30px;position:absolute;top:10px;right:10px;z-index:9999;transition:0.2s;}
+#speedNow{position:absolute;bottom:60px;left:0;background:white;padding:10px;font-size:20px;z-index:9999;}
+#followBox{position:absolute;top:10px;left:300px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
+#twoPointBox{position:absolute;top:10px;left:450px;background:white;padding:10px;font-size:20px;z-index:99999;border:1px solid #000;}
+#viewBox{position:absolute;top:10px;left:150px;background:white;padding:5px;z-index:9999;}
 #qrBtn{position:absolute;top:10px;left:750px;z-index:9999;background:white;padding:10px;font-size:20px;border:1px solid #000;}
 #qrBox{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;z-index:99999;display:none;text-align:center;}
 #qrImg{width:250px;height:250px;}
 #qrClose{font-size:20px;margin-top:10px;}
-.photo-marker{cursor:pointer;pointer-events:auto;}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div id="cameraBtn" onclick="openCamera()">📷</div>
-<div id="qrBtn" onclick="openQR()">QR</div>
-
+<div id="cameraBtn" onclick="openCamera()">📷 カメラ</div>
 <div id="cameraBox">
 <video id="cameraVideo" autoplay></video>
 <button id="cameraShoot" onclick="shootPhoto()">撮影</button>
-<button id="cameraSwitch" onclick="switchCamera()">切替</button>
+<button id="cameraSwitch" onclick="switchCamera()">前後切替</button>
 <button id="cameraClose" onclick="closeCamera()">閉じる</button>
 </div>
-
 <div id="titleInputBox">
+<div>題名</div>
 <input id="titleInput">
 <button id="titleSaveBtn" onclick="saveTitle()">保存</button>
 </div>
-
 <div id="photoView">
 <div id="photoTitle"></div>
 <img id="photoImg">
 <div id="closePhoto" onclick="closePhoto()">閉じる</div>
 </div>
-
+<div id="dir"></div>
+<div id="eta"></div>
+<div id="arrow">▽</div>
+<div id="speedNow"></div>
+<div id="followBox"><label><input type="checkbox" id="followMode">追従</label></div>
+<div id="twoPointBox"><label><input type="checkbox" id="twoPointMode">2点ルート</label></div>
+<div id="viewBox">
+<select id="viewSelect" onchange="changeView()">
+<option value="osm">OpenStreetMap</option>
+<option value="gsi_light">地理院地図 淡色</option>
+<option value="gsi_ortho">地理院地図 オルソ</option>
+</select>
+</div>
+<div id="qrBtn" onclick="openQR()">QRコード表示</div>
 <div id="qrBox">
 <img id="qrImg">
 <button id="qrClose" onclick="closeQR()">閉じる</button>
 </div>
 
 <script>
-const BIN="https://api.jsonbin.io/v3/b/6a829d2cf5f4af5e291f1a4e";
-const KEY="$2a$10$DKqFC6yTYkzmTbKXVnnDhuV/nvXdKOTSi8rMMHNmicw8l/DohMcE2";
+const JSONBIN_URL="https://api.jsonbin.io/v3/b/6a829d2cf5f4af5e291f1a4e";
+const JSONBIN_KEY="$2a$10$DKqFC6yTYkzmTbKXVnnDhuV/nvXdKOTSi8rMMHNmicw8l/DohMcE2";
 
-function genId(){return crypto.randomUUID();}
-function getQueryId(){var s=location.search;if(!s)return null;var p=new URLSearchParams(s);return p.get("id");}
+function getQueryId(){
+var s=location.search;
+if(!s)return null;
+var p=new URLSearchParams(s);
+return p.get("id");
+}
 
-var storedId=localStorage.getItem("shareId");
+function genId(){
+return"ID_"+Math.random().toString(36).slice(2)+Date.now().toString(36);
+}
+
+var storedId=localStorage.getItem("targetId");
 var queryId=getQueryId();
-var shareId=storedId||queryId||genId();
-localStorage.setItem("shareId",shareId);
+var targetId=storedId||queryId||genId();
+localStorage.setItem("targetId",targetId);
 
 var map=L.map('map').setView([35,135],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+var layers={
+osm:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}),
+gsi_light:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:18}),
+gsi_ortho:L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg',{maxZoom:18})
+};
+layers.osm.addTo(map);
 
-var myMarker=null;
-var otherMarker=null;
+function changeView(){
+var v=document.getElementById("viewSelect").value;
+Object.values(layers).forEach(l=>map.removeLayer(l));
+layers[v].addTo(map);
+}
+
+var marker=null;
+var routeLine=null;
 var currentPos=null;
+var steps=[];
+var lastTapPos=null;
+var lastSpeedPos=null;
+var lastSpeedTime=null;
 var tempPhoto=null;
 var cameraStream=null;
 var cameraMode="environment";
+var lastVoice="";
+let smoothSpeed=0;
+let targetSpeed=0;
+var redMarkers=[];
+
+function smoothLoop(){
+smoothSpeed+=(targetSpeed-smoothSpeed)*0.15;
+document.getElementById("speedNow").innerHTML="時速 "+smoothSpeed.toFixed(1)+" km/h";
+requestAnimationFrame(smoothLoop);
+}
+smoothLoop();
 
 navigator.geolocation.watchPosition(function(p){
-currentPos=[p.coords.latitude,p.coords.longitude];
-if(!myMarker){
-myMarker=L.marker(currentPos,{icon:L.divIcon({html:"●",className:"",iconSize:[20,20]})}).addTo(map);
-}else{
-myMarker.setLatLng(currentPos);
+var now=[p.coords.latitude,p.coords.longitude];
+var nowTime=Date.now();
+if(lastSpeedPos){
+var dx=now[0]-lastSpeedPos[0];
+var dy=now[1]-lastSpeedPos[1];
+var dist=Math.hypot(dx,dy)*111000;
+var dt=(nowTime-lastSpeedTime)/1000;
+if(dt>0){
+var speed=(dist/dt)*3.6;
+targetSpeed=speed;
+window.autoSpeed=speed;
 }
-sendMyPos();
+}
+lastSpeedPos=now;
+lastSpeedTime=nowTime;
+currentPos=now;
+if(!marker){
+marker=L.marker(currentPos).addTo(map);
+}else{
+marker.setLatLng(currentPos);
+}
+if(document.getElementById("followMode").checked){
+map.setView(currentPos,17);
+}
+if(steps.length>0){
+var next=null;
+var dist=999999;
+steps.forEach(function(s){
+var d=Math.hypot(currentPos[0]-s.maneuver.location[1],currentPos[1]-s.maneuver.location[0]);
+if(d<dist){dist=d;next=s;}
+});
+if(next){
+var m=next.maneuver;
+var t="";
+var rot=0;
+if(m.modifier==="right"){t="右折です";rot=90;}
+if(m.modifier==="left"){t="左折です";rot=-90;}
+if(m.type==="straight"){t="直進です";rot=180;}
+document.getElementById("dir").innerHTML=t;
+document.getElementById("arrow").style.transform="rotate("+rot+"deg)";
+if(t!==""&&t!==lastVoice){
+lastVoice=t;
+var u=new SpeechSynthesisUtterance(t);
+u.lang="ja-JP";
+speechSynthesis.speak(u);
+}
+}
+}
+if(queryId){
+sendMyPositionToBin();
+}
 });
 
-function sendMyPos(){
+function calcTime(distance){
+var sp=window.autoSpeed||20;
+var totalMinutes=(distance/(sp*1000))*60;
+var h=Math.floor(totalMinutes/60);
+var m=Math.round(totalMinutes%60);
+return(h>0?h+"時間":"")+m+"分";
+}
+
+function goTo(dest){
 if(!currentPos)return;
-fetch(BIN,{headers:{"X-Master-Key":KEY}})
-.then(r=>r.json())
-.then(data=>{
-var rec=data.record||{};
-rec.targets=rec.targets||[];
-var i=rec.targets.findIndex(t=>t.id===shareId);
-var o={id:shareId,lat:currentPos[0],lon:currentPos[1]};
-if(i>=0)rec.targets[i]=o;else rec.targets.push(o);
-fetch(BIN,{
-method:"PUT",
-headers:{"Content-Type":"application/json","X-Master-Key":KEY},
-body:JSON.stringify(rec)
-});
-});
+var url=`https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${currentPos[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
+fetch(url).then(r=>r.json()).then(d=>{
+steps=d.routes[0].legs[0].steps;
+var distance=d.routes[0].distance;
+document.getElementById("eta").innerHTML=calcTime(distance);
+var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+if(routeLine)map.removeLayer(routeLine);
+routeLine=L.polyline(coords,{color:'blue',weight:5}).addTo(map);
+if(steps.length>0){
+var m=steps[0].maneuver;
+var t="";
+var rot=0;
+if(m.modifier==="right"){t="右に曲がります";rot=90;}
+if(m.modifier==="left"){t="左に曲がります";rot=-90;}
+if(m.type==="straight"){t="直進です";rot=180;}
+document.getElementById("arrow").style.transform="rotate("+rot+"deg)";
+if(t!==""){
+lastVoice=t;
+var u=new SpeechSynthesisUtterance(t);
+u.lang="ja-JP";
+speechSynthesis.speak(u);
 }
-
-function loadTargets(){
-fetch(BIN,{headers:{"X-Master-Key":KEY}})
-.then(r=>r.json())
-.then(data=>{
-var rec=data.record||{};
-if(!rec.targets)return;
-var others=rec.targets.filter(t=>t.id!==shareId);
-if(others.length===0)return;
-var t=others[0];
-if(!otherMarker){
-otherMarker=L.marker([t.lat,t.lon],{icon:L.divIcon({html:"●",className:"",iconSize:[20,20]})}).addTo(map);
-}else{
-otherMarker.setLatLng([t.lat,t.lon]);
 }
 });
 }
 
-setInterval(loadTargets,2000);
+var twoPointMode=false;
+var startPoint=null;
+var endPoint=null;
+var redLine=null;
+
+document.getElementById("twoPointMode").addEventListener("change",function(){
+twoPointMode=this.checked;
+startPoint=null;
+endPoint=null;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+if(routeLine)map.removeLayer(routeLine);
+routeLine=null;
+steps=[];
+document.getElementById("eta").innerHTML="";
+});
+
+map.on('click',function(e){
+var tap=[e.latlng.lat,e.latlng.lng];
+if(twoPointMode){
+if(!startPoint){
+startPoint=tap;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+L.marker(startPoint).addTo(map);
+return;
+}
+if(!endPoint){
+endPoint=tap;
+L.marker(endPoint).addTo(map);
+var url=`https://router.project-osrm.org/route/v1/driving/${startPoint[1]},${startPoint[0]};${endPoint[1]},${endPoint[0]}?overview=full&geometries=geojson&steps=true`;
+fetch(url).then(r=>r.json()).then(d=>{
+var coords=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+redLine=L.polyline(coords,{color:'red',weight:5}).addTo(map);
+steps=d.routes[0].legs[0].steps;
+var distance=d.routes[0].distance;
+document.getElementById("eta").innerHTML=calcTime(distance);
+if(steps.length>0){
+var m=steps[0].maneuver;
+var t="";
+var rot=0;
+if(m.modifier==="right"){t="右に曲がります";rot=90;}
+if(m.modifier==="left"){t="左に曲がります";rot=-90;}
+if(m.type==="straight"){t="直進です";rot=180;}
+document.getElementById("arrow").style.transform="rotate("+rot+"deg)";
+if(t!==""){
+lastVoice=t;
+var u=new SpeechSynthesisUtterance(t);
+u.lang="ja-JP";
+speechSynthesis.speak(u);
+}
+}
+});
+return;
+}
+startPoint=tap;
+endPoint=null;
+if(redLine)map.removeLayer(redLine);
+redLine=null;
+L.marker(startPoint).addTo(map);
+return;
+}
+if(lastTapPos&&Math.hypot(lastTapPos[0]-tap[0],lastTapPos[1]-tap[1])<0.00005){
+lastTapPos=tap;
+return;
+}
+lastTapPos=tap;
+goTo(tap);
+});
 
 async function openCamera(){
 cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:cameraMode}});
@@ -146,82 +309,60 @@ document.getElementById("cameraBox").style.display="none";
 }
 
 function shootPhoto(){
-var v=document.getElementById("cameraVideo");
-var c=document.createElement("canvas");
-c.width=v.videoWidth;
-c.height=v.videoHeight;
-c.getContext("2d").drawImage(v,0,0);
-var img=c.toDataURL("image/png");
-tempPhoto={id:shareId,lat:currentPos[0],lon:currentPos[1],img:img};
+var video=document.getElementById("cameraVideo");
+var canvas=document.createElement("canvas");
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
+canvas.getContext("2d").drawImage(video,0,0);
+var imgData=canvas.toDataURL("image/png");
+tempPhoto={lat:currentPos[0],lon:currentPos[1],img:imgData};
 closeCamera();
 document.getElementById("titleInputBox").style.display="block";
 }
 
 function saveTitle(){
-var t=document.getElementById("titleInput").value;
+var title=document.getElementById("titleInput").value;
 document.getElementById("titleInput").value="";
 document.getElementById("titleInputBox").style.display="none";
-tempPhoto.title=t;
+tempPhoto.title=title;
 savePhoto(tempPhoto);
 addPhotoMarker(tempPhoto);
+saveBin();
 tempPhoto=null;
 }
 
 function savePhoto(p){
-fetch(BIN,{headers:{"X-Master-Key":KEY}})
-.then(r=>r.json())
-.then(data=>{
-var rec=data.record||{};
-rec.photos=rec.photos||[];
-rec.photos.push(p);
-fetch(BIN,{
-method:"PUT",
-headers:{"Content-Type":"application/json","X-Master-Key":KEY},
-body:JSON.stringify(rec)
-});
-});
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+arr.push(p);
+localStorage.setItem("photos",JSON.stringify(arr));
 }
 
 function loadPhotos(){
-fetch(BIN,{headers:{"X-Master-Key":KEY}})
-.then(r=>r.json())
-.then(data=>{
-var rec=data.record||{};
-if(!rec.photos)return;
-rec.photos.filter(x=>x.id===shareId).forEach(function(p){
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+arr.forEach(function(p){
 addPhotoMarker(p);
-});
 });
 }
 
 function addPhotoMarker(p){
-var m=L.marker([p.lat,p.lon],{
-icon:L.divIcon({html:"🖼",className:"photo-marker",iconSize:[20,20]})
-}).addTo(map);
+var m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:"■",className:"",iconSize:[20,20]})}).addTo(map);
 m.on("click",function(){
+if(confirm("削除しますか？")){
+deletePhoto(p);
+map.removeLayer(m);
+saveBin();
+return;
+}
 document.getElementById("photoTitle").innerText=p.title;
 document.getElementById("photoImg").src=p.img;
 document.getElementById("photoView").style.display="block";
 });
-m.on("contextmenu",function(){
-deletePhoto(p);
-map.removeLayer(m);
-});
 }
 
 function deletePhoto(p){
-fetch(BIN,{headers:{"X-Master-Key":KEY}})
-.then(r=>r.json())
-.then(data=>{
-var rec=data.record||{};
-rec.photos=rec.photos||[];
-rec.photos=rec.photos.filter(x=>!(x.id===p.id&&x.lat===p.lat&&x.lon===p.lon&&x.title===p.title));
-fetch(BIN,{
-method:"PUT",
-headers:{"Content-Type":"application/json","X-Master-Key":KEY},
-body:JSON.stringify(rec)
-});
-});
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+arr=arr.filter(x=>!(x.lat===p.lat&&x.lon===p.lon&&x.title===p.title));
+localStorage.setItem("photos",JSON.stringify(arr));
 }
 
 function closePhoto(){
@@ -229,9 +370,9 @@ document.getElementById("photoView").style.display="none";
 }
 
 function openQR(){
-var u=location.origin+location.pathname+"?id="+encodeURIComponent(shareId);
-var q="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data="+encodeURIComponent(u);
-document.getElementById("qrImg").src=q;
+var url=location.origin+location.pathname+"?id="+encodeURIComponent(targetId);
+var qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data="+encodeURIComponent(url);
+document.getElementById("qrImg").src=qrUrl;
 document.getElementById("qrBox").style.display="block";
 }
 
@@ -239,7 +380,98 @@ function closeQR(){
 document.getElementById("qrBox").style.display="none";
 }
 
+function getLocalPoints(){
+var arr=JSON.parse(localStorage.getItem("photos")||"[]");
+return arr.map(p=>({lat:p.lat,lon:p.lon,title:p.title}));
+}
+
+function saveBin(){
+var points=getLocalPoints();
+fetch(JSONBIN_URL,{
+method:"GET",
+headers:{"X-Master-Key":JSONBIN_KEY}
+})
+.then(r=>r.json())
+.then(data=>{
+var record=data.record||{};
+record.targetId=targetId;
+record.points=points;
+record.targets=record.targets||[];
+fetch(JSONBIN_URL,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json",
+"X-Master-Key":JSONBIN_KEY
+},
+body:JSON.stringify(record)
+});
+})
+.catch(()=>{
+var record={targetId:targetId,points:getLocalPoints(),targets:[]};
+fetch(JSONBIN_URL,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json",
+"X-Master-Key":JSONBIN_KEY
+},
+body:JSON.stringify(record)
+});
+});
+}
+
+function loadBin(){
+fetch(JSONBIN_URL,{
+headers:{"X-Master-Key":JSONBIN_KEY}
+})
+.then(r=>r.json())
+.then(data=>{
+var record=data.record||{};
+if(record.points){
+record.points.forEach(function(p){
+var m=L.marker([p.lat,p.lon],{icon:L.divIcon({html:"■",className:"",iconSize:[20,20]})}).addTo(map);
+});
+}
+if(record.targets){
+redMarkers.forEach(m=>map.removeLayer(m));
+redMarkers=[];
+record.targets.forEach(function(t){
+if(t.id===targetId){
+var m=L.marker([t.lat,t.lon],{icon:L.divIcon({html:"●",className:"",iconSize:[20,20],style:"color:red"})}).addTo(map);
+redMarkers.push(m);
+}
+});
+}
+});
+}
+
+function sendMyPositionToBin(){
+if(!currentPos)return;
+fetch(JSONBIN_URL,{
+headers:{"X-Master-Key":JSONBIN_KEY}
+})
+.then(r=>r.json())
+.then(data=>{
+var record=data.record||{};
+record.targetId=record.targetId||targetId;
+record.points=record.points||[];
+record.targets=record.targets||[];
+var meIndex=record.targets.findIndex(t=>t.id===targetId);
+var obj={id:targetId,lat:currentPos[0],lon:currentPos[1]};
+if(meIndex>=0)record.targets[meIndex]=obj;else record.targets.push(obj);
+fetch(JSONBIN_URL,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json",
+"X-Master-Key":JSONBIN_KEY
+},
+body:JSON.stringify(record)
+});
+});
+}
+
 loadPhotos();
+loadBin();
+setInterval(loadBin,5000);
 </script>
 </body>
 </html>
