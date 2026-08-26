@@ -477,9 +477,7 @@ setInterval(loadBin,5000);
 </body>
 </html>
 
-<html>
-<head>
-<meta charset="utf-8">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <style>
@@ -491,7 +489,7 @@ body{margin:0;overflow:hidden;}
 <body>
 
 <div id="map"></div>
-<div id="walkBox">今日の距離: <span id="walkKm">0.00</span> km</div>
+<div id="walkBox">今日の距離：<span id="walkKm">0.00</span> km</div>
 
 <script>
 var map=L.map('map').setView([35,135],5);
@@ -499,12 +497,11 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).a
 
 var marker=null;
 var currentPos=null;
+var lastPos=null;
 
 var todayKey="walk_"+new Date().toISOString().slice(0,10);
 var totalMeter=parseFloat(localStorage.getItem(todayKey)||"0");
 document.getElementById("walkKm").innerText=(totalMeter/1000).toFixed(2);
-
-var lastPos=null;
 
 function dist(a,b){
     const R=6371000;
@@ -540,4 +537,3 @@ navigator.geolocation.watchPosition(function(p){
 
 </body>
 </html>
-m
