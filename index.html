@@ -1,49 +1,93 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes">
-<title>GPS_MAP_SYSTEM</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GPS_MAP_SYSTEM_YUI_SEYAS</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:sans-serif}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif}
 #map{position:absolute;inset:0;width:100%;height:100%}
-#viewBox,#followBox,#twoPointBox,#spawnBtn,#qrBtn,#walkBox,#speedNow,#dir,#eta,#statusBox,#shopBtn{
-position:absolute;background:#fff;z-index:9999;border:1px solid #000;box-sizing:border-box
-}
-#viewBox{top:10px;left:10px;padding:5px}
-#followBox{top:10px;left:180px;padding:10px;font-size:18px}
-#twoPointBox{top:10px;left:280px;padding:10px;font-size:18px}
-#spawnBtn{top:10px;left:430px;padding:10px;font-size:18px;cursor:pointer}
-#qrBtn{top:10px;left:650px;padding:10px;font-size:18px;cursor:pointer}
-#walkBox{top:10px;right:10px;padding:10px;font-size:18px}
-#shopBtn{top:58px;right:10px;padding:10px 18px;font-size:20px;cursor:pointer}
-#statusBox{top:110px;right:10px;padding:10px;font-size:18px}
-#speedNow{bottom:60px;left:0;padding:10px;font-size:18px}
-#dir{bottom:0;left:50%;transform:translateX(-50%);padding:10px;font-size:20px;min-width:180px;text-align:center}
-#eta{bottom:0;left:0;padding:10px;font-size:18px}
-#spawnBox,#qrBox,#shopBox{
-position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-background:#fff;padding:20px;z-index:99999;display:none;text-align:center;
-border:2px solid #000;box-sizing:border-box
-}
-#shopBox{width:350px}
-#shopTitle{font-size:28px;font-weight:bold;margin-bottom:15px}
-.shopStat{font-size:20px;margin:8px}
-.shopButton{display:block;width:90%;margin:12px auto!important}
-#qrImg{width:250px;height:250px}
-#spawnBox button,#qrBox button,#shopBox button{
-font-size:18px;margin:5px;padding:10px 18px
-}
-.monsterIcon{font-size:30px}
+.draggableUI{position:absolute;z-index:9999;background:#fff;border:1px solid #777;border-radius:8px;padding:8px;box-sizing:border-box;touch-action:none;user-select:none}
+#searchBox{top:10px;left:50%;transform:translateX(-50%);width:min(92vw,520px)}
+#searchInput{width:100%;box-sizing:border-box;font-size:18px;padding:9px;border:1px solid #aaa;border-radius:5px;user-select:text}
+#searchResults{max-height:45vh;overflow-y:auto}
+.result{padding:10px;border-bottom:1px solid #ddd;cursor:pointer;background:#fff;user-select:text}
+.resultName{font-size:18px;font-weight:bold}
+.resultAddress{font-size:13px;margin-top:4px}
+#followBox{top:100px;left:10px}
+#modeBox{top:145px;left:10px}
+#routeModeBox{top:190px;left:10px}
+#viewBox{top:235px;left:10px}
+#walkBox{top:280px;left:10px}
+#inventoryBtn{right:10px;top:60px;font-size:18px;cursor:grab}
+#cameraBtn{top:10px;right:10px;font-size:18px;cursor:grab}
+#locationBtn{right:10px;bottom:150px;font-size:24px;cursor:grab}
+#speedNow{left:10px;bottom:65px}
+#distanceNow{left:10px;bottom:110px}
+#routeInfo{right:10px;bottom:10px}
+#dir{left:50%;bottom:10px;transform:translateX(-50%)}
+#modeStatus{margin-top:4px;font-weight:bold}
+#reward{position:absolute;z-index:11000;left:50%;top:50%;transform:translate(-50%,-50%);display:none;background:#fff;border:3px solid #222;border-radius:15px;padding:25px;text-align:center;min-width:280px;box-shadow:0 5px 30px #0008}
+#rewardPet{font-size:80px}
+#rewardName{font-size:25px;font-weight:bold}
+#rewardRarity{font-size:20px;margin:8px}
+#inventory{position:absolute;z-index:12000;left:50%;top:50%;transform:translate(-50%,-50%);display:none;width:min(94vw,650px);max-height:80vh;overflow:auto;background:#fff;border:3px solid #222;border-radius:15px;padding:15px;box-sizing:border-box}
+#inventory h2{text-align:center;margin:5px}
+#petGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.petCard{border:2px solid #aaa;border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:#fafafa}
+.petEmoji{font-size:48px}
+.petCardName{font-weight:bold}
+.petCardRarity{font-size:14px}
+#petDetail{display:none;text-align:center;border-top:2px solid #ddd;margin-top:15px;padding-top:15px}
+#petDetailEmoji{font-size:80px}
+#petDetailName{font-size:25px;font-weight:bold}
+#petDetailRarity{font-size:20px}
+#cameraBox,#titleInputBox,#photoView{position:absolute;z-index:10000;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid #000;padding:15px;display:none;text-align:center;max-width:95vw;box-sizing:border-box}
+#cameraVideo{width:min(90vw,500px);max-height:70vh}
+#photoImg{display:block;max-width:90vw;max-height:75vh;margin:auto}
+button,input,select{font-size:18px;margin:5px;padding:6px}
+.dragHandle{position:absolute;top:2px;right:5px;font-size:12px;opacity:.35}
+.common{border-color:#aaa}
+.epic{border-color:#9b59ff;box-shadow:0 0 8px #9b59ff55}
+.legend{border-color:#ffae00;box-shadow:0 0 12px #ffae0088}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
 
-<div id="viewBox">
+<div id="searchBox" class="draggableUI">
+<div class="dragHandle">↕</div>
+<input id="searchInput" type="text" placeholder="店を検索 例：コンビニ、ラーメン">
+<div id="searchResults"></div>
+</div>
+
+<div id="followBox" class="draggableUI">
+<div class="dragHandle">↕</div>
+<label><input type="checkbox" id="followMode" checked>現在地追従</label>
+</div>
+
+<div id="modeBox" class="draggableUI">
+<div class="dragHandle">↕</div>
+<div>
+<label><input type="radio" name="moveMode" value="walk" checked>歩き</label>
+<label><input type="radio" name="moveMode" value="car">車</label>
+</div>
+<div id="modeStatus">歩き</div>
+</div>
+
+<div id="routeModeBox" class="draggableUI">
+<div class="dragHandle">↕</div>
+<label><input type="checkbox" id="lineMode">現在地→クリック線</label>
+<div id="lineStatus"></div>
+<label><input type="checkbox" id="routeMode">自分→クリック道のり</label>
+<div id="routeStatus"></div>
+</div>
+
+<div id="viewBox" class="draggableUI">
+<div class="dragHandle">↕</div>
 <select id="viewSelect" onchange="changeView()">
 <option value="osm">OpenStreetMap</option>
 <option value="gsi_light">地理院地図 淡色</option>
@@ -51,84 +95,78 @@ font-size:18px;margin:5px;padding:10px 18px
 </select>
 </div>
 
-<div id="followBox">
-<label><input type="checkbox" id="followMode">追従</label>
+<div id="walkBox" class="draggableUI">
+<div class="dragHandle">↕</div>
+今日の距離 <span id="walkKm">0.00</span> km
 </div>
 
-<div id="twoPointBox">
-<label><input type="checkbox" id="twoPointMode">2点ルート</label>
+<div id="inventoryBtn" class="draggableUI" onclick="openInventory()">インベントリ</div>
+<div id="cameraBtn" class="draggableUI" onclick="openCamera()">カメラ</div>
+<div id="locationBtn" class="draggableUI" onclick="showCurrentLocation()">現在地</div>
+<div id="speedNow" class="draggableUI">時速 0.0 km/h</div>
+<div id="distanceNow" class="draggableUI">直線距離 0 m</div>
+<div id="routeInfo" class="draggableUI">道のり 0 m</div>
+<div id="dir" class="draggableUI"></div>
+
+<div id="reward">
+<div>2KM達成！</div>
+<div id="rewardPet"></div>
+<div id="rewardName"></div>
+<div id="rewardRarity"></div>
+<button onclick="closeReward()">受け取る</button>
 </div>
 
-<div id="spawnBtn" onclick="openSpawnBox()">🔴 スポーン地点</div>
-<div id="qrBtn" onclick="openQR()">QRコード</div>
-
-<div id="walkBox">
-🚶 今日 <span id="walkKm">0.00</span> km
+<div id="inventory">
+<h2>ペットインベントリ</h2>
+<div id="petGrid"></div>
+<div id="petDetail">
+<div id="petDetailEmoji"></div>
+<div id="petDetailName"></div>
+<div id="petDetailRarity"></div>
+<button onclick="closePetDetail()">閉じる</button>
+</div>
+<button onclick="closeInventory()">閉じる</button>
 </div>
 
-<div id="shopBtn" onclick="openShop()">🛒 ショップ</div>
-
-<div id="statusBox">
-⭐ Lv.<span id="levelText">1</span><br>
-💰 <span id="coinText">0</span><br>
-⚔️ <span id="attackText">10</span><br>
-❤️ <span id="hpText">100</span>/<span id="maxHpText">100</span>
-</div>
-
-<div id="speedNow">時速 0.0 km/h</div>
-<div id="dir">スポーン地点を設定してください</div>
-<div id="eta"></div>
-
-<div id="spawnBox">
-<div id="spawnStatus">スポーン地点を設定</div>
-<button onclick="setSpawnHere()">現在地をスポーン地点にする</button>
-<button onclick="clearSpawn()">スポーン地点削除</button>
-<button onclick="closeSpawnBox()">閉じる</button>
-</div>
-
-<div id="qrBox">
-<img id="qrImg">
+<div id="cameraBox">
+<video id="cameraVideo" autoplay playsinline></video>
 <br>
-<button onclick="closeQR()">閉じる</button>
+<button onclick="shootPhoto()">撮影</button>
+<button onclick="switchCamera()">前後切替</button>
+<button onclick="closeCamera()">閉じる</button>
 </div>
 
-<div id="shopBox">
-<div id="shopTitle">🛒 ショップ</div>
-<div class="shopStat">⭐ レベル: <span id="shopLevel">1</span></div>
-<div class="shopStat">💰 コイン: <span id="shopCoins">0</span></div>
-<div class="shopStat">⚔️ 攻撃力: <span id="shopAttack">10</span></div>
-<div class="shopStat">❤️ HP: <span id="shopHp">100</span>/<span id="shopMaxHp">100</span></div>
-<div class="shopStat">💵 次の強化に <span id="shopCost">10</span>コイン必要</div>
-<button class="shopButton" onclick="buyAttack()">⚔️ 攻撃力 +5</button>
-<button class="shopButton" onclick="buyHp()">❤️ 最大HP +20</button>
-<button class="shopButton" onclick="closeShop()">閉じる</button>
+<div id="titleInputBox">
+<div>題名</div>
+<input id="titleInput">
+<br>
+<button onclick="saveTitle()">保存</button>
+<button onclick="cancelTitle()">キャンセル</button>
+</div>
+
+<div id="photoView">
+<div id="photoTitle"></div>
+<img id="photoImg">
+<br>
+<button onclick="closePhoto()">閉じる</button>
 </div>
 
 <script>
-const JSONBIN_URL="https://api.jsonbin.io/v3/b/6a829d2cf5f4af5e291f1a4e";
-const JSONBIN_KEY="$2a$10$DKqFC6yTYkzmTbKXVnnDhuV/nvXdKOTSi8rMMHNmicw8l/DohMcE2";
+const UI_POSITION_KEY="gps_map_ui_positions_v6";
+const PET_KEY="gps_pet_inventory_v1";
+const WALK_REWARD_KEY="gps_walk_reward_v1";
 
-function getQueryId(){
-return new URLSearchParams(location.search).get("id");
-}
-
-function genId(){
-return"ID_"+Math.random().toString(36).slice(2)+Date.now().toString(36);
-}
-
-const queryId=getQueryId();
-const targetId=localStorage.getItem("targetId")||queryId||genId();
-localStorage.setItem("targetId",targetId);
-
-const map=L.map("map",{
+let map=L.map("map",{
 zoomControl:true,
 scrollWheelZoom:true,
 doubleClickZoom:true,
 touchZoom:true,
+boxZoom:true,
+keyboard:true,
 dragging:true
 }).setView([35,135],5);
 
-const layers={
+let layers={
 osm:L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}),
 gsi_light:L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",{maxZoom:18}),
 gsi_ortho:L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg",{maxZoom:18})
@@ -136,680 +174,1052 @@ gsi_ortho:L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg"
 
 layers.osm.addTo(map);
 
-function changeView(){
-Object.values(layers).forEach(l=>map.removeLayer(l));
-layers[document.getElementById("viewSelect").value].addTo(map);
-}
-
-let marker=null;
 let currentPos=null;
-let routeLine=null;
-let spawnRoute=null;
-let spawnMarker=null;
-let steps=[];
-let targetSpeed=0;
-let smoothSpeed=0;
+let currentMarker=null;
+let accuracyCircle=null;
+let lineEndPoint=null;
+let lineEndMarker=null;
+let liveLine=null;
+let routeDestination=null;
+let routeDestinationMarker=null;
+let roadRouteLine=null;
+let routeRequestId=0;
+let lastRouteRequest=0;
+let lastPos=null;
 let lastSpeedPos=null;
 let lastSpeedTime=null;
-let twoPointMode=false;
-let startPoint=null;
-let endPoint=null;
-let twoPointMarkers=[];
-let spawnPoint=null;
-let monsters=[];
+let targetSpeed=0;
+let smoothSpeed=0;
+let lineMode=false;
+let routeMode=false;
+let searchTimer=null;
+let cameraStream=null;
+let cameraMode="environment";
+let tempPhoto=null;
+let photoMarkers=[];
+let storeMarkers=[];
+let totalMeter=0;
+let lastVoice="";
+let rewardDistance=0;
+let rewardCount=0;
+let pets=[];
 
-let player={
-level:Number(localStorage.getItem("playerLevel")||1),
-attack:Number(localStorage.getItem("playerAttack")||10),
-hp:Number(localStorage.getItem("playerHp")||100),
-maxHp:Number(localStorage.getItem("playerMaxHp")||100),
-coins:Number(localStorage.getItem("playerCoins")||0)
-};
+let todayKey="walk_"+new Date().toISOString().slice(0,10);
 
-function getUpgradeCost(){
-return 10+(player.level-1)*20;
+totalMeter=parseFloat(localStorage.getItem(todayKey)||"0");
+rewardDistance=parseFloat(localStorage.getItem("pet_reward_distance")||"0");
+rewardCount=parseInt(localStorage.getItem(WALK_REWARD_KEY)||"0");
+pets=JSON.parse(localStorage.getItem(PET_KEY)||"[]");
+
+document.getElementById("walkKm").innerText=(totalMeter/1000).toFixed(2);
+
+function saveUIPositions(){
+let data={};
+document.querySelectorAll(".draggableUI").forEach(function(el){
+let r=el.getBoundingClientRect();
+data[el.id]={left:Math.round(r.left),top:Math.round(r.top)};
+});
+localStorage.setItem(UI_POSITION_KEY,JSON.stringify(data));
 }
 
-function savePlayer(){
-localStorage.setItem("playerLevel",player.level);
-localStorage.setItem("playerAttack",player.attack);
-localStorage.setItem("playerHp",player.hp);
-localStorage.setItem("playerMaxHp",player.maxHp);
-localStorage.setItem("playerCoins",player.coins);
-updatePlayerUI();
-}
-
-function updatePlayerUI(){
-document.getElementById("levelText").innerText=player.level;
-document.getElementById("coinText").innerText=player.coins;
-document.getElementById("attackText").innerText=player.attack;
-document.getElementById("hpText").innerText=player.hp;
-document.getElementById("maxHpText").innerText=player.maxHp;
-}
-
-function openShop(){
-const cost=getUpgradeCost();
-document.getElementById("shopLevel").innerText=player.level;
-document.getElementById("shopCoins").innerText=player.coins;
-document.getElementById("shopAttack").innerText=player.attack;
-document.getElementById("shopHp").innerText=player.hp;
-document.getElementById("shopMaxHp").innerText=player.maxHp;
-document.getElementById("shopCost").innerText=cost;
-document.getElementById("shopBox").style.display="block";
-}
-
-function closeShop(){
-document.getElementById("shopBox").style.display="none";
-}
-
-function buyAttack(){
-const cost=getUpgradeCost();
-
-if(player.coins<cost){
-alert("コインが足りません。"+cost+"コイン必要です。");
-return;
-}
-
-player.coins-=cost;
-player.attack+=5;
-player.level++;
-
-savePlayer();
-openShop();
-}
-
-function buyHp(){
-const cost=getUpgradeCost();
-
-if(player.coins<cost){
-alert("コインが足りません。"+cost+"コイン必要です。");
-return;
-}
-
-player.coins-=cost;
-player.maxHp+=20;
-player.hp=player.maxHp;
-player.level++;
-
-savePlayer();
-openShop();
-}
-
-function smoothLoop(){
-smoothSpeed+=(targetSpeed-smoothSpeed)*.15;
-document.getElementById("speedNow").innerText="時速 "+smoothSpeed.toFixed(1)+" km/h";
-requestAnimationFrame(smoothLoop);
-}
-
-smoothLoop();
-
-function haversine(a,b){
-const R=6371000;
-const lat1=a[0]*Math.PI/180;
-const lat2=b[0]*Math.PI/180;
-const dLat=(b[0]-a[0])*Math.PI/180;
-const dLon=(b[1]-a[1])*Math.PI/180;
-
-const h=Math.sin(dLat/2)**2+
-Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-
-return R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
-}
-
-function calcTime(distance){
-const sp=Math.max(targetSpeed,5);
-const minutes=distance/(sp*1000)*60;
-const h=Math.floor(minutes/60);
-const m=Math.round(minutes%60);
-return(h>0?h+"時間":"")+m+"分";
-}
-
-async function getRoute(from,to){
-const url=
-"https://router.project-osrm.org/route/v1/driving/"+
-from[1]+","+from[0]+";"+
-to[1]+","+to[0]+
-"?overview=full&geometries=geojson&steps=true";
-
+function loadUIPositions(){
+let data={};
 try{
-const r=await fetch(url);
-const d=await r.json();
+data=JSON.parse(localStorage.getItem(UI_POSITION_KEY)||"{}");
+}catch(e){data={};}
 
-if(!d.routes||!d.routes.length)return null;
-
-return d.routes[0];
-}catch(e){
-return null;
-}
-}
-
-async function routeToSpawn(){
-if(!currentPos||!spawnPoint)return;
-
-const route=await getRoute(currentPos,spawnPoint);
-
-if(!route)return;
-
-const coords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
-
-if(spawnRoute)map.removeLayer(spawnRoute);
-
-spawnRoute=L.polyline(coords,{
-color:"red",
-weight:6
-}).addTo(map);
-
-steps=route.legs[0].steps||[];
-
-document.getElementById("eta").innerText=
-"スポーンまで "+
-(route.distance/1000).toFixed(2)+" km "+
-calcTime(route.distance);
-}
-
-async function routeTwoPoints(){
-if(!startPoint||!endPoint)return;
-
-const route=await getRoute(startPoint,endPoint);
-
-if(!route)return;
-
-const coords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
-
-if(routeLine)map.removeLayer(routeLine);
-
-routeLine=L.polyline(coords,{
-color:"red",
-weight:6
-}).addTo(map);
-
-steps=route.legs[0].steps||[];
-
-document.getElementById("eta").innerText=
-"距離 "+(route.distance/1000).toFixed(2)+" km "+
-calcTime(route.distance);
-
-map.fitBounds(routeLine.getBounds(),{padding:[50,50]});
-}
-
-function spawnIcon(){
-return L.divIcon({
-html:"🔴",
-className:"",
-iconSize:[32,32],
-iconAnchor:[16,16]
+document.querySelectorAll(".draggableUI").forEach(function(el){
+let p=data[el.id];
+if(!p)return;
+el.style.transform="none";
+el.style.left=Math.max(0,Math.min(p.left,window.innerWidth-el.offsetWidth))+"px";
+el.style.top=Math.max(0,Math.min(p.top,window.innerHeight-el.offsetHeight))+"px";
+el.style.right="auto";
+el.style.bottom="auto";
 });
 }
 
-function monsterIcon(){
-return L.divIcon({
-html:"👹",
-className:"monsterIcon",
-iconSize:[40,40],
-iconAnchor:[20,20]
-});
+function makeDraggable(el){
+let dragging=false;
+let sx=0;
+let sy=0;
+let sl=0;
+let st=0;
+let moved=false;
+
+function down(e){
+if(
+e.target.tagName==="INPUT"||
+e.target.tagName==="SELECT"||
+e.target.tagName==="BUTTON"||
+e.target.closest(".result")
+)return;
+
+let p=e.touches?e.touches[0]:e;
+let r=el.getBoundingClientRect();
+
+dragging=true;
+moved=false;
+sx=p.clientX;
+sy=p.clientY;
+sl=r.left;
+st=r.top;
+
+el.style.transform="none";
+el.style.left=r.left+"px";
+el.style.top=r.top+"px";
+el.style.right="auto";
+el.style.bottom="auto";
+
+if(e.cancelable)e.preventDefault();
 }
 
-function createMonsterPosition(center){
-const angle=Math.random()*Math.PI*2;
-const distance=100+Math.random()*900;
+function move(e){
+if(!dragging)return;
 
-return[
-center[0]+Math.cos(angle)*distance/111000,
-center[1]+Math.sin(angle)*distance/(111000*Math.cos(center[0]*Math.PI/180))
-];
+let p=e.touches?e.touches[0]:e;
+let dx=p.clientX-sx;
+let dy=p.clientY-sy;
+
+if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
+
+let l=Math.max(0,Math.min(sl+dx,window.innerWidth-el.offsetWidth));
+let t=Math.max(0,Math.min(st+dy,window.innerHeight-el.offsetHeight));
+
+el.style.left=l+"px";
+el.style.top=t+"px";
+
+if(e.cancelable)e.preventDefault();
 }
 
-function generateMonsters(){
-monsters.forEach(m=>{
-if(m.marker)map.removeLayer(m.marker);
-});
-
-monsters=[];
-
-if(!spawnPoint)return;
-
-const count=5+Math.floor(Math.random()*16);
-
-for(let i=0;i<count;i++){
-
-const pos=createMonsterPosition(spawnPoint);
-
-const monster={
-hp:30+Math.floor(Math.random()*71),
-attack:5+Math.floor(Math.random()*16),
-marker:null
-};
-
-monster.maxHp=monster.hp;
-
-monster.marker=L.marker(pos,{
-icon:monsterIcon()
-}).addTo(map);
-
-monster.marker.bindTooltip(
-"👹 HP "+monster.hp+"/"+monster.maxHp,
-{direction:"top"}
-);
-
-monster.marker.on("click",()=>{
-alert(
-"モンスター\n"+
-"HP: "+monster.hp+"\n"+
-"攻撃力: "+monster.attack
-);
-});
-
-monsters.push(monster);
-}
+function up(){
+if(!dragging)return;
+dragging=false;
+if(moved)saveUIPositions();
 }
 
-function showSpawn(){
-if(!spawnPoint)return;
-
-if(spawnMarker)map.removeLayer(spawnMarker);
-
-spawnMarker=L.marker(spawnPoint,{
-icon:spawnIcon()
-}).addTo(map);
-
-spawnMarker.bindPopup("スポーン地点");
-
-generateMonsters();
-
-if(currentPos)routeToSpawn();
+el.addEventListener("mousedown",down);
+window.addEventListener("mousemove",move);
+window.addEventListener("mouseup",up);
+el.addEventListener("touchstart",down,{passive:false});
+window.addEventListener("touchmove",move,{passive:false});
+window.addEventListener("touchend",up);
 }
 
-function openSpawnBox(){
-document.getElementById("spawnBox").style.display="block";
+document.querySelectorAll(".draggableUI").forEach(makeDraggable);
+window.addEventListener("resize",loadUIPositions);
+setTimeout(loadUIPositions,100);
 
-document.getElementById("spawnStatus").innerText=
-spawnPoint?
-"スポーン地点: "+
-spawnPoint[0].toFixed(6)+", "+
-spawnPoint[1].toFixed(6):
-"スポーン地点を設定";
-}
+function changeView(){
+let v=document.getElementById("viewSelect").value;
 
-function closeSpawnBox(){
-document.getElementById("spawnBox").style.display="none";
-}
-
-function setSpawnHere(){
-if(!currentPos)return;
-
-spawnPoint=[currentPos[0],currentPos[1]];
-
-localStorage.setItem(
-"spawnPoint",
-JSON.stringify(spawnPoint)
-);
-
-showSpawn();
-saveBin();
-closeSpawnBox();
-}
-
-function clearSpawn(){
-spawnPoint=null;
-localStorage.removeItem("spawnPoint");
-
-if(spawnMarker){
-map.removeLayer(spawnMarker);
-spawnMarker=null;
-}
-
-if(spawnRoute){
-map.removeLayer(spawnRoute);
-spawnRoute=null;
-}
-
-monsters.forEach(m=>{
-if(m.marker)map.removeLayer(m.marker);
+Object.keys(layers).forEach(function(k){
+if(map.hasLayer(layers[k]))map.removeLayer(layers[k]);
 });
 
-monsters=[];
-
-document.getElementById("eta").innerText="";
-document.getElementById("dir").innerText="スポーン地点を設定してください";
-
-saveBin();
-closeSpawnBox();
+layers[v].addTo(map);
 }
 
-document.getElementById("twoPointMode").addEventListener("change",function(){
-
-twoPointMode=this.checked;
-
-startPoint=null;
-endPoint=null;
-
-twoPointMarkers.forEach(m=>map.removeLayer(m));
-
-twoPointMarkers=[];
-
-if(routeLine){
-map.removeLayer(routeLine);
-routeLine=null;
-}
-
-if(twoPointMode){
-document.getElementById("dir").innerText="1点目をタップしてください";
-}else{
-document.getElementById("dir").innerText=
-spawnPoint?
-"スポーン地点へ移動します":
-"スポーン地点を設定してください";
-}
+document.querySelectorAll('input[name="moveMode"]').forEach(function(el){
+el.addEventListener("change",function(){
+document.getElementById("modeStatus").innerText=
+this.value==="walk"?"歩き":"車";
+});
 });
 
-map.on("click",function(e){
-
-const p=[e.latlng.lat,e.latlng.lng];
-
-if(twoPointMode){
-
-if(!startPoint){
-startPoint=p;
-twoPointMarkers.push(L.marker(p).addTo(map));
-document.getElementById("dir").innerText="2点目をタップしてください";
-return;
-}
-
-if(!endPoint){
-endPoint=p;
-twoPointMarkers.push(L.marker(p).addTo(map));
-routeTwoPoints();
-return;
-}
-
-startPoint=p;
-endPoint=null;
-
-twoPointMarkers.forEach(m=>map.removeLayer(m));
-
-twoPointMarkers=[];
-
-if(routeLine){
-map.removeLayer(routeLine);
-routeLine=null;
-}
-
-twoPointMarkers.push(L.marker(p).addTo(map));
-
-document.getElementById("dir").innerText="2点目をタップしてください";
-
-return;
-}
-
-spawnPoint=p;
-
-localStorage.setItem(
-"spawnPoint",
-JSON.stringify(spawnPoint)
-);
-
-showSpawn();
-saveBin();
-});
-
-const todayKey="walk_"+new Date().toISOString().slice(0,10);
-
-let totalMeter=Number(
-localStorage.getItem(todayKey)||0
-);
-
-document.getElementById("walkKm").innerText=
-(totalMeter/1000).toFixed(2);
-
-let lastWalkPos=null;
-
-navigator.geolocation.watchPosition(function(p){
-
-const now=[
+function setCurrentLocation(p){
+currentPos=[
 p.coords.latitude,
 p.coords.longitude
 ];
 
-const nowTime=Date.now();
-
-if(lastSpeedPos){
-
-const dist=haversine(
-lastSpeedPos,
-now
-);
-
-const dt=(nowTime-lastSpeedTime)/1000;
-
-if(dt>0){
-
-const speed=dist/dt*3.6;
-
-if(speed<250){
-targetSpeed=speed;
-}
-}
-}
-
-lastSpeedPos=now;
-lastSpeedTime=now;
-currentPos=now;
-
-if(!marker){
-marker=L.marker(now).addTo(map);
+if(!currentMarker){
+currentMarker=L.circleMarker(currentPos,{
+radius:9,
+weight:3,
+fillOpacity:1
+}).addTo(map);
 }else{
-marker.setLatLng(now);
+currentMarker.setLatLng(currentPos);
 }
 
-if(document.getElementById("followMode").checked){
-map.setView(now,17);
+let accuracy=p.coords.accuracy||20;
+
+if(!accuracyCircle){
+accuracyCircle=L.circle(currentPos,{
+radius:accuracy,
+weight:1,
+fillOpacity:.12
+}).addTo(map);
+}else{
+accuracyCircle.setLatLng(currentPos);
+accuracyCircle.setRadius(accuracy);
 }
 
-if(lastWalkPos){
+updateLiveLine();
+updateRoadRoute();
+updateDistances();
+}
 
-const d=haversine(
-lastWalkPos,
-now
+function showCurrentLocation(){
+if(!navigator.geolocation){
+alert("このブラウザでは位置情報を使用できません");
+return;
+}
+
+navigator.geolocation.getCurrentPosition(
+function(p){
+setCurrentLocation(p);
+map.setView(currentPos,17);
+},
+function(){
+alert("現在地を取得できません。位置情報を許可してください。");
+},
+{
+enableHighAccuracy:true,
+timeout:15000,
+maximumAge:0
+}
 );
+}
 
-if(d<50){
+navigator.geolocation.watchPosition(
+function(p){
+let now=[
+p.coords.latitude,
+p.coords.longitude
+];
 
+let nowTime=Date.now();
+
+setCurrentLocation(p);
+
+if(lastPos){
+let d=distanceBetween(lastPos,now);
+
+if(d>.5&&d<50){
+let mode=document.querySelector(
+'input[name="moveMode"]:checked'
+).value;
+
+if(mode==="walk"){
 totalMeter+=d;
+rewardDistance+=d;
 
-localStorage.setItem(
-todayKey,
-totalMeter
-);
+localStorage.setItem(todayKey,totalMeter);
+localStorage.setItem("pet_reward_distance",rewardDistance);
 
 document.getElementById("walkKm").innerText=
 (totalMeter/1000).toFixed(2);
+
+checkPetReward();
 }
 }
 
-lastWalkPos=now;
-
-if(spawnPoint&&!twoPointMode){
-routeToSpawn();
 }
 
-if(queryId){
-sendMyPositionToBin();
+if(lastSpeedPos){
+let d=distanceBetween(lastSpeedPos,now);
+let dt=(nowTime-lastSpeedTime)/1000;
+
+if(dt>0&&d<100)targetSpeed=(d/dt)*3.6;
 }
 
-},{
-enableHighAccuracy:true,
-maximumAge:1000,
-timeout:10000
-});
+lastPos=now;
+lastSpeedPos=now;
+lastSpeedTime=nowTime;
 
-function openQR(){
-
-const url=
-location.origin+
-location.pathname+
-"?id="+
-encodeURIComponent(targetId);
-
-const qr=
-"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data="+
-encodeURIComponent(url);
-
-document.getElementById("qrImg").src=qr;
-
-document.getElementById("qrBox").style.display="block";
-}
-
-function closeQR(){
-document.getElementById("qrBox").style.display="none";
-}
-
-async function getRecord(){
-
-const r=await fetch(
-JSONBIN_URL,
-{
-headers:{
-"X-Master-Key":JSONBIN_KEY
-}
-}
+if(document.getElementById("followMode").checked){
+map.setView(
+currentPos,
+map.getZoom()<15?17:map.getZoom()
 );
-
-const d=await r.json();
-
-return d.record||{};
 }
 
-async function saveBin(){
-
-try{
-
-const record=await getRecord();
-
-record.targetId=record.targetId||targetId;
-record.points=record.points||[];
-record.targets=record.targets||[];
-record.spawns=record.spawns||[];
-
-record.spawns=record.spawns.filter(
-x=>x.id!==targetId
-);
-
-if(spawnPoint){
-
-record.spawns.push({
-id:targetId,
-lat:spawnPoint[0],
-lon:spawnPoint[1]
-});
-
-}
-
-await fetch(
-JSONBIN_URL,
-{
-method:"PUT",
-headers:{
-"Content-Type":"application/json",
-"X-Master-Key":JSONBIN_KEY
+updateLiveLine();
+updateRoadRoute();
+updateDistances();
 },
-body:JSON.stringify(record)
+function(){},
+{
+enableHighAccuracy:true,
+timeout:15000,
+maximumAge:0
 }
 );
 
-}catch(e){}
-}
-
-async function loadBin(){
-
-try{
-
-const record=await getRecord();
-
-if(record.spawns&&!spawnPoint){
-
-const remote=record.spawns.find(
-x=>x.id===targetId
+function checkPetReward(){
+while(rewardDistance>=2000){
+rewardDistance-=2000;
+localStorage.setItem(
+"pet_reward_distance",
+rewardDistance
 );
 
-if(remote){
+giveRandomPet();
+}
+}
 
-spawnPoint=[
-remote.lat,
-remote.lon
+const petList=[
+{name:"スライム",emoji:"🟢",rarity:"common",weight:70},
+{name:"ねこ",emoji:"🐱",rarity:"common",weight:70},
+{name:"いぬ",emoji:"🐶",rarity:"common",weight:70},
+{name:"うさぎ",emoji:"🐰",rarity:"common",weight:70},
+{name:"きつね",emoji:"🦊",rarity:"epic",weight:20},
+{name:"ドラゴン",emoji:"🐉",rarity:"epic",weight:20},
+{name:"ユニコーン",emoji:"🦄",rarity:"epic",weight:20},
+{name:"フェニックス",emoji:"🔥",rarity:"legend",weight:10},
+{name:"ゴールデンドラゴン",emoji:"🐲",rarity:"legend",weight:10},
+{name:"光のペット",emoji:"✨",rarity:"legend",weight:10}
 ];
 
-localStorage.setItem(
-"spawnPoint",
-JSON.stringify(spawnPoint)
-);
+function randomPet(){
+let total=0;
 
-showSpawn();
-
-}
-}
-
-}catch(e){}
-}
-
-async function sendMyPositionToBin(){
-
-if(!currentPos)return;
-
-try{
-
-const record=await getRecord();
-
-record.targetId=record.targetId||targetId;
-record.points=record.points||[];
-record.targets=record.targets||[];
-record.spawns=record.spawns||[];
-
-record.targets=record.targets.filter(
-t=>t.id!==targetId
-);
-
-record.targets.push({
-id:targetId,
-lat:currentPos[0],
-lon:currentPos[1]
+petList.forEach(function(p){
+total+=p.weight;
 });
 
-await fetch(
-JSONBIN_URL,
-{
-method:"PUT",
-headers:{
-"Content-Type":"application/json",
-"X-Master-Key":JSONBIN_KEY
-},
-body:JSON.stringify(record)
+let r=Math.random()*total;
+
+for(let p of petList){
+r-=p.weight;
+
+if(r<=0){
+return{
+id:"pet_"+Date.now()+"_"+Math.random(),
+name:p.name,
+emoji:p.emoji,
+rarity:p.rarity
+};
+}
+}
+
+return petList[0];
+}
+
+function giveRandomPet(){
+let pet=randomPet();
+
+pets.push(pet);
+
+localStorage.setItem(
+PET_KEY,
+JSON.stringify(pets)
+);
+
+rewardCount++;
+
+localStorage.setItem(
+WALK_REWARD_KEY,
+rewardCount
+);
+
+document.getElementById("rewardPet").innerText=pet.emoji;
+document.getElementById("rewardName").innerText=pet.name;
+document.getElementById("rewardRarity").innerText=
+pet.rarity.toUpperCase();
+
+document.getElementById("reward").style.display="block";
+}
+
+function closeReward(){
+document.getElementById("reward").style.display="none";
+}
+
+function openInventory(){
+renderInventory();
+document.getElementById("inventory").style.display="block";
+}
+
+function closeInventory(){
+document.getElementById("inventory").style.display="none";
+}
+
+function renderInventory(){
+let grid=document.getElementById("petGrid");
+grid.innerHTML="";
+
+if(!pets.length){
+grid.innerHTML="<div>ペットはいません</div>";
+return;
+}
+
+pets.forEach(function(pet,index){
+let div=document.createElement("div");
+
+div.className="petCard "+pet.rarity;
+
+div.innerHTML=
+'<div class="petEmoji">'+
+pet.emoji+
+'</div>'+
+'<div class="petCardName">'+
+escapeHTML(pet.name)+
+'</div>'+
+'<div class="petCardRarity">'+
+pet.rarity.toUpperCase()+
+'</div>';
+
+div.onclick=function(){
+showPetDetail(pet,index);
+};
+
+grid.appendChild(div);
+});
+}
+
+function showPetDetail(pet,index){
+document.getElementById("petDetail").style.display="block";
+document.getElementById("petDetailEmoji").innerText=pet.emoji;
+document.getElementById("petDetailName").innerText=pet.name;
+document.getElementById("petDetailRarity").innerText=
+pet.rarity.toUpperCase();
+}
+
+function closePetDetail(){
+document.getElementById("petDetail").style.display="none";
+}
+
+function updateLiveLine(){
+if(!lineMode||!currentPos||!lineEndPoint){
+if(liveLine){
+map.removeLayer(liveLine);
+liveLine=null;
+}
+return;
+}
+
+let points=[currentPos,lineEndPoint];
+
+if(!liveLine){
+liveLine=L.polyline(points,{
+weight:6,
+opacity:.9
+}).addTo(map);
+}else{
+liveLine.setLatLngs(points);
+}
+
+document.getElementById("lineStatus").innerText=
+"距離 "+formatDistance(
+distanceBetween(currentPos,lineEndPoint)
+);
+}
+
+function updateDistances(){
+if(!currentPos)return;
+
+if(lineEndPoint){
+document.getElementById("distanceNow").innerText=
+"直線距離 "+
+formatDistance(
+distanceBetween(currentPos,lineEndPoint)
+);
+}
+
+if(routeDestination&&!roadRouteLine){
+document.getElementById("routeInfo").innerText="道のり取得中";
+}
+}
+
+function requestRoadRoute(){
+if(!routeMode||!currentPos||!routeDestination)return;
+
+let now=Date.now();
+
+if(now-lastRouteRequest<1000)return;
+
+lastRouteRequest=now;
+
+let requestId=++routeRequestId;
+
+let a=currentPos;
+let b=routeDestination;
+
+let url=
+"https://router.project-osrm.org/route/v1/driving/"+
+a[1]+","+a[0]+";"+
+b[1]+","+b[0]+
+"?overview=full&geometries=geojson";
+
+fetch(url)
+.then(function(r){
+return r.json();
+})
+.then(function(data){
+if(
+requestId!==routeRequestId||
+!routeMode||
+!currentPos||
+!routeDestination
+)return;
+
+if(!data.routes||!data.routes.length){
+document.getElementById("routeStatus").innerText=
+"道のりを取得できません";
+return;
+}
+
+let route=data.routes[0];
+
+let coords=
+route.geometry.coordinates.map(
+function(c){
+return[c[1],c[0]];
 }
 );
 
-}catch(e){}
+if(roadRouteLine){
+map.removeLayer(roadRouteLine);
 }
 
-const savedSpawn=localStorage.getItem("spawnPoint");
+roadRouteLine=L.polyline(
+coords,
+{
+weight:7,
+opacity:.9
+}
+).addTo(map);
 
-if(savedSpawn){
+document.getElementById("routeStatus").innerText=
+"道のり "+
+formatDistance(route.distance)+
+"・"+
+formatTime(route.duration);
+
+document.getElementById("routeInfo").innerText=
+"道のり "+
+formatDistance(route.distance);
+})
+.catch(function(){
+if(requestId!==routeRequestId)return;
+
+document.getElementById("routeStatus").innerText=
+"道のりを取得できません";
+});
+}
+
+function updateRoadRoute(){
+if(!routeMode||!currentPos||!routeDestination)return;
+requestRoadRoute();
+}
+
+function updateDistances(){
+if(!currentPos)return;
+
+if(lineEndPoint){
+let d=distanceBetween(
+currentPos,
+lineEndPoint
+);
+
+document.getElementById("distanceNow").innerText=
+"直線距離 "+formatDistance(d);
+
+document.getElementById("lineStatus").innerText=
+"距離 "+formatDistance(d);
+}
+
+if(routeDestination&&!roadRouteLine){
+document.getElementById("routeInfo").innerText=
+"道のり取得中";
+}
+}
+
+document.getElementById("lineMode").addEventListener(
+"change",
+function(){
+lineMode=this.checked;
+
+if(!lineMode){
+lineEndPoint=null;
+
+if(lineEndMarker){
+map.removeLayer(lineEndMarker);
+lineEndMarker=null;
+}
+
+if(liveLine){
+map.removeLayer(liveLine);
+liveLine=null;
+}
+
+document.getElementById("lineStatus").innerText="";
+}else{
+document.getElementById("lineStatus").innerText=
+"地図をクリックしてください";
+}
+}
+);
+
+document.getElementById("routeMode").addEventListener(
+"change",
+function(){
+routeMode=this.checked;
+
+if(!routeMode){
+routeDestination=null;
+
+if(routeDestinationMarker){
+map.removeLayer(routeDestinationMarker);
+routeDestinationMarker=null;
+}
+
+if(roadRouteLine){
+map.removeLayer(roadRouteLine);
+roadRouteLine=null;
+}
+
+routeRequestId++;
+
+document.getElementById("routeStatus").innerText="";
+document.getElementById("routeInfo").innerText=
+"道のり 0 m";
+}else{
+document.getElementById("routeStatus").innerText=
+"地図をクリックしてください";
+}
+}
+);
+
+map.on("click",function(e){
+if(
+e.originalEvent.target.closest(
+"#searchBox,#cameraBtn,#locationBtn,#followBox,#modeBox,#routeModeBox,#viewBox,#walkBox,#speedNow,#distanceNow,#routeInfo,#dir,#inventoryBtn"
+)
+)return;
+
+let point=[
+e.latlng.lat,
+e.latlng.lng
+];
+
+if(lineMode){
+lineEndPoint=point;
+
+if(lineEndMarker){
+map.removeLayer(lineEndMarker);
+}
+
+lineEndMarker=L.circleMarker(
+point,
+{
+radius:7,
+weight:2,
+fillOpacity:.9
+}
+).addTo(map);
+
+updateLiveLine();
+updateDistances();
+}
+
+if(routeMode){
+routeDestination=point;
+
+if(routeDestinationMarker){
+map.removeLayer(routeDestinationMarker);
+}
+
+routeDestinationMarker=L.marker(
+point
+).addTo(map);
+
+if(roadRouteLine){
+map.removeLayer(roadRouteLine);
+roadRouteLine=null;
+}
+
+document.getElementById("routeStatus").innerText=
+"道のりを取得中";
+
+lastRouteRequest=0;
+requestRoadRoute();
+}
+});
+
+function distanceBetween(a,b){
+let R=6371000;
+
+let p1=a[0]*Math.PI/180;
+let p2=b[0]*Math.PI/180;
+let dp=(b[0]-a[0])*Math.PI/180;
+let dl=(b[1]-a[1])*Math.PI/180;
+
+let h=
+Math.sin(dp/2)**2+
+Math.cos(p1)*
+Math.cos(p2)*
+Math.sin(dl/2)**2;
+
+return R*2*Math.atan2(
+Math.sqrt(h),
+Math.sqrt(1-h)
+);
+}
+
+function formatDistance(m){
+if(m<1000)return Math.round(m)+" m";
+return(m/1000).toFixed(2)+" km";
+}
+
+function formatTime(seconds){
+let min=Math.round(seconds/60);
+
+if(min<60)return min+"分";
+
+let h=Math.floor(min/60);
+let m=min%60;
+
+return h+"時間"+m+"分";
+}
+
+function speedLoop(){
+smoothSpeed+=
+(targetSpeed-smoothSpeed)*.1;
+
+if(Math.abs(smoothSpeed)<.1)smoothSpeed=0;
+
+document.getElementById("speedNow").innerText=
+"時速 "+smoothSpeed.toFixed(1)+" km/h";
+
+requestAnimationFrame(speedLoop);
+}
+
+speedLoop();
+
+function escapeHTML(s){
+return String(s||"").replace(
+/[&<>"']/g,
+function(c){
+return{
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#39;"
+}[c];
+}
+);
+}
+
+async function searchStores(text){
+text=text.trim();
+
+if(!text){
+document.getElementById("searchResults").innerHTML="";
+return;
+}
+
+let center=currentPos||map.getCenter();
+
+let lat=center.lat!==undefined?center.lat:center[0];
+let lon=center.lng!==undefined?center.lng:center[1];
+
+let url=
+"https://nominatim.openstreetmap.org/search?format=jsonv2"+
+"&q="+encodeURIComponent(text)+
+"&lat="+lat+
+"&lon="+lon+
+"&limit=15"+
+"&addressdetails=1";
 
 try{
+let r=await fetch(
+url,
+{
+headers:{Accept:"application/json"}
+}
+);
 
-spawnPoint=JSON.parse(savedSpawn);
+let data=await r.json();
 
-showSpawn();
-
+showResults(data,text);
 }catch(e){
-
-localStorage.removeItem("spawnPoint");
-
+document.getElementById("searchResults").innerHTML=
+'<div class="result">検索できませんでした</div>';
 }
 }
 
-updatePlayerUI();
-loadBin();
-setInterval(loadBin,5000);
+function showResults(data,text){
+let box=document.getElementById("searchResults");
+
+box.innerHTML="";
+
+if(!data.length){
+box.innerHTML=
+'<div class="result">「'+
+escapeHTML(text)+
+'」が見つかりません</div>';
+return;
+}
+
+data.forEach(function(item){
+let name=
+item.name||
+(
+item.display_name?
+item.display_name.split(",")[0]:
+"検索結果"
+);
+
+let div=document.createElement("div");
+
+div.className="result";
+
+div.innerHTML=
+'<div class="resultName">'+
+escapeHTML(name)+
+'</div>'+
+'<div class="resultAddress">'+
+escapeHTML(item.display_name||"")+
+'</div>';
+
+div.onclick=function(){
+let lat=parseFloat(item.lat);
+let lon=parseFloat(item.lon);
+
+map.setView([lat,lon],18);
+
+let marker=L.marker(
+[lat,lon]
+).addTo(map);
+
+marker.bindPopup(
+"<b>"+
+escapeHTML(name)+
+"</b><br>"+
+escapeHTML(item.display_name||"")+
+'<br><button onclick="routeToStore('+lat+','+lon+')">ここまで道のり</button>'
+).openPopup();
+
+storeMarkers.push(marker);
+box.innerHTML="";
+};
+
+box.appendChild(div);
+});
+}
+
+function routeToStore(lat,lon){
+if(!currentPos){
+alert("現在地を取得中です");
+return;
+}
+
+routeDestination=[lat,lon];
+routeMode=true;
+
+document.getElementById("routeMode").checked=true;
+
+if(routeDestinationMarker){
+map.removeLayer(routeDestinationMarker);
+}
+
+routeDestinationMarker=L.marker(
+routeDestination
+).addTo(map);
+
+if(roadRouteLine){
+map.removeLayer(roadRouteLine);
+roadRouteLine=null;
+}
+
+lastRouteRequest=0;
+document.getElementById("routeStatus").innerText=
+"道のりを取得中";
+
+requestRoadRoute();
+}
+
+document.getElementById("searchInput").addEventListener(
+"input",
+function(){
+let text=this.value;
+
+clearTimeout(searchTimer);
+
+searchTimer=setTimeout(
+function(){
+searchStores(text);
+},
+150
+);
+}
+);
+
+function openCamera(){
+if(
+!navigator.mediaDevices||
+!navigator.mediaDevices.getUserMedia
+){
+alert("このブラウザではカメラを使用できません");
+return;
+}
+
+navigator.mediaDevices.getUserMedia({
+video:{facingMode:cameraMode},
+audio:false
+})
+.then(function(stream){
+cameraStream=stream;
+
+document.getElementById("cameraVideo").srcObject=stream;
+document.getElementById("cameraBox").style.display="block";
+})
+.catch(function(){
+alert("カメラを使用できません");
+});
+}
+
+function closeCamera(){
+if(cameraStream){
+cameraStream.getTracks().forEach(function(t){
+t.stop();
+});
+cameraStream=null;
+}
+
+document.getElementById("cameraVideo").srcObject=null;
+document.getElementById("cameraBox").style.display="none";
+}
+
+function switchCamera(){
+cameraMode=
+cameraMode==="environment"?
+"user":
+"environment";
+
+closeCamera();
+openCamera();
+}
+
+function shootPhoto(){
+if(!currentPos){
+alert("現在地を取得中です");
+return;
+}
+
+let video=document.getElementById("cameraVideo");
+
+if(!video.videoWidth){
+alert("カメラ映像を取得中です");
+return;
+}
+
+let canvas=document.createElement("canvas");
+
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
+
+canvas.getContext("2d").drawImage(
+video,
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+tempPhoto={
+id:"photo_"+Date.now(),
+lat:currentPos[0],
+lon:currentPos[1],
+img:canvas.toDataURL("image/jpeg",.8),
+title:"写真"
+};
+
+closeCamera();
+
+document.getElementById("titleInput").value="";
+document.getElementById("titleInputBox").style.display="block";
+}
+
+function saveTitle(){
+if(!tempPhoto)return;
+
+let title=
+document.getElementById("titleInput").value.trim();
+
+if(title)tempPhoto.title=title;
+
+let photos=JSON.parse(
+localStorage.getItem("photos")||"[]"
+);
+
+photos.push(tempPhoto);
+
+localStorage.setItem(
+"photos",
+JSON.stringify(photos)
+);
+
+addPhotoMarker(tempPhoto);
+
+tempPhoto=null;
+
+document.getElementById(
+"titleInputBox"
+).style.display="none";
+}
+
+function cancelTitle(){
+tempPhoto=null;
+document.getElementById(
+"titleInputBox"
+).style.display="none";
+}
+
+function addPhotoMarker(p){
+let marker=L.marker(
+[p.lat,p.lon],
+{
+icon:L.divIcon({
+html:"📷",
+className:"",
+iconSize:[32,32],
+iconAnchor:[16,16]
+})
+}
+).addTo(map);
+
+marker.on("click",function(){
+document.getElementById("photoTitle").innerText=
+p.title||"写真";
+
+document.getElementById("photoImg").src=p.img;
+document.getElementById("photoView").style.display="block";
+});
+
+photoMarkers.push(marker);
+}
+
+function loadPhotos(){
+photoMarkers.forEach(function(m){
+map.removeLayer(m);
+});
+
+photoMarkers=[];
+
+let photos=JSON.parse(
+localStorage.getItem("photos")||"[]"
+);
+
+photos.forEach(function(p){
+if(p.img)addPhotoMarker(p);
+});
+}
+
+function closePhoto(){
+document.getElementById("photoImg").src="";
+document.getElementById("photoView").style.display="none";
+}
+
+loadPhotos();
+
+setTimeout(function(){
+showCurrentLocation();
+},1000);
 </script>
 
 </body>
