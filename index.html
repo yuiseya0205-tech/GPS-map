@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MAP_SYSTEM</title>
+<title>GPS_MAP_SYSTEM_YUI_SEYAS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -33,25 +33,159 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:
 #rewardPet{font-size:80px}
 #rewardName{font-size:25px;font-weight:bold}
 #rewardRarity{font-size:20px;margin:8px}
-#inventory{position:absolute;z-index:12000;left:50%;top:50%;transform:translate(-50%,-50%);display:none;width:min(94vw,650px);max-height:80vh;overflow:auto;background:#fff;border:3px solid #222;border-radius:15px;padding:15px;box-sizing:border-box}
-#inventory h2{text-align:center;margin:5px}
-#petGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
-.petCard{border:2px solid #aaa;border-radius:10px;padding:10px;text-align:center;cursor:pointer;background:#fafafa}
-.petEmoji{font-size:48px}
-.petCardName{font-weight:bold}
-.petCardRarity{font-size:14px}
-#petDetail{display:none;text-align:center;border-top:2px solid #ddd;margin-top:15px;padding-top:15px}
-#petDetailEmoji{font-size:80px}
+#inventory{
+position:absolute;
+z-index:12000;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+display:none;
+width:min(94vw,620px);
+height:min(80vh,560px);
+background:#c6c6c6;
+border:4px solid #151515;
+box-shadow:inset 0 0 0 3px #555,0 8px 35px #0009;
+padding:12px;
+box-sizing:border-box;
+touch-action:none;
+user-select:none
+}
+#inventoryHeader{
+height:48px;
+background:#8b8b8b;
+border:3px solid #555;
+box-shadow:inset 2px 2px #ddd,inset -2px -2px #333;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 10px;
+box-sizing:border-box;
+cursor:grab;
+font-size:22px;
+font-weight:bold
+}
+#inventoryClose{
+font-size:22px;
+width:40px;
+height:36px;
+padding:0;
+margin:0;
+cursor:pointer
+}
+#inventoryTitle{
+font-size:22px;
+text-shadow:1px 1px #fff
+}
+#petGrid{
+margin-top:12px;
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:7px;
+overflow-y:auto;
+height:calc(100% - 115px);
+padding:5px;
+box-sizing:border-box;
+background:#8b8b8b;
+border:3px solid #555;
+box-shadow:inset 2px 2px #333,inset -2px -2px #ddd
+}
+.petSlot{
+aspect-ratio:1;
+min-width:0;
+background:#8b8b8b;
+border:3px solid #373737;
+box-shadow:inset 2px 2px #555,inset -2px -2px #ccc;
+display:flex;
+align-items:center;
+justify-content:center;
+position:relative;
+cursor:pointer;
+box-sizing:border-box
+}
+.petSlot:hover{
+background:#aaa
+}
+.petSlot.empty{
+cursor:default
+}
+.petEmoji{
+font-size:42px;
+line-height:1
+}
+.petSmallName{
+position:absolute;
+left:3px;
+right:3px;
+bottom:3px;
+font-size:11px;
+font-weight:bold;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+text-align:center;
+background:#0009;
+color:#fff
+}
+.petNumber{
+position:absolute;
+left:4px;
+top:2px;
+font-size:13px;
+color:#fff;
+text-shadow:2px 2px #000
+}
+.common{
+outline:2px solid #aaa;
+outline-offset:-5px
+}
+.epic{
+outline:2px solid #a855f7;
+outline-offset:-5px
+}
+.legend{
+outline:2px solid #ffb300;
+outline-offset:-5px
+}
+#inventoryFooter{
+margin-top:10px;
+height:45px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#8b8b8b;
+border:3px solid #555;
+box-shadow:inset 2px 2px #ddd,inset -2px -2px #333;
+font-size:17px
+}
+#petDetail{
+position:absolute;
+z-index:13000;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+display:none;
+width:min(90vw,330px);
+background:#c6c6c6;
+border:4px solid #151515;
+box-shadow:inset 0 0 0 3px #555,0 8px 35px #0009;
+padding:15px;
+box-sizing:border-box;
+text-align:center
+}
+#petDetailBox{
+background:#8b8b8b;
+border:3px solid #555;
+padding:15px;
+box-shadow:inset 2px 2px #ddd,inset -2px -2px #333
+}
+#petDetailEmoji{font-size:90px}
 #petDetailName{font-size:25px;font-weight:bold}
-#petDetailRarity{font-size:20px}
+#petDetailRarity{font-size:20px;margin:8px}
 #cameraBox,#titleInputBox,#photoView{position:absolute;z-index:10000;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid #000;padding:15px;display:none;text-align:center;max-width:95vw;box-sizing:border-box}
 #cameraVideo{width:min(90vw,500px);max-height:70vh}
 #photoImg{display:block;max-width:90vw;max-height:75vh;margin:auto}
 button,input,select{font-size:18px;margin:5px;padding:6px}
 .dragHandle{position:absolute;top:2px;right:5px;font-size:12px;opacity:.35}
-.common{border-color:#aaa}
-.epic{border-color:#9b59ff;box-shadow:0 0 8px #9b59ff55}
-.legend{border-color:#ffae00;box-shadow:0 0 12px #ffae0088}
 </style>
 </head>
 <body>
@@ -71,10 +205,8 @@ button,input,select{font-size:18px;margin:5px;padding:6px}
 
 <div id="modeBox" class="draggableUI">
 <div class="dragHandle">↕</div>
-<div>
 <label><input type="radio" name="moveMode" value="walk" checked>歩き</label>
 <label><input type="radio" name="moveMode" value="car">車</label>
-</div>
 <div id="modeStatus">歩き</div>
 </div>
 
@@ -117,15 +249,23 @@ button,input,select{font-size:18px;margin:5px;padding:6px}
 </div>
 
 <div id="inventory">
-<h2>ペットインベントリ</h2>
+<div id="inventoryHeader">
+<span id="inventoryTitle">インベントリ</span>
+<button id="inventoryClose" onclick="closeInventory()">×</button>
+</div>
 <div id="petGrid"></div>
+<div id="inventoryFooter">
+ペット <span id="petCount" style="margin-left:8px">0</span> 体
+</div>
+</div>
+
 <div id="petDetail">
+<div id="petDetailBox">
 <div id="petDetailEmoji"></div>
 <div id="petDetailName"></div>
 <div id="petDetailRarity"></div>
 <button onclick="closePetDetail()">閉じる</button>
 </div>
-<button onclick="closeInventory()">閉じる</button>
 </div>
 
 <div id="cameraBox">
@@ -152,9 +292,9 @@ button,input,select{font-size:18px;margin:5px;padding:6px}
 </div>
 
 <script>
-const UI_POSITION_KEY="gps_map_ui_positions_v6";
-const PET_KEY="gps_pet_inventory_v1";
-const WALK_REWARD_KEY="gps_walk_reward_v1";
+const UI_POSITION_KEY="gps_map_ui_positions_v7";
+const PET_KEY="gps_pet_inventory_v2";
+const WALK_REWARD_KEY="gps_walk_reward_v2";
 
 let map=L.map("map",{
 zoomControl:true,
@@ -199,7 +339,6 @@ let tempPhoto=null;
 let photoMarkers=[];
 let storeMarkers=[];
 let totalMeter=0;
-let lastVoice="";
 let rewardDistance=0;
 let rewardCount=0;
 let pets=[];
@@ -307,8 +446,128 @@ window.addEventListener("touchend",up);
 }
 
 document.querySelectorAll(".draggableUI").forEach(makeDraggable);
+
 window.addEventListener("resize",loadUIPositions);
-setTimeout(loadUIPositions,100);
+
+function makeInventoryDraggable(){
+let el=document.getElementById("inventory");
+let header=document.getElementById("inventoryHeader");
+let dragging=false;
+let sx=0;
+let sy=0;
+let sl=0;
+let st=0;
+
+function down(e){
+if(e.target.closest("button"))return;
+
+let p=e.touches?e.touches[0]:e;
+let r=el.getBoundingClientRect();
+
+dragging=true;
+sx=p.clientX;
+sy=p.clientY;
+sl=r.left;
+st=r.top;
+
+el.style.transform="none";
+el.style.left=r.left+"px";
+el.style.top=r.top+"px";
+el.style.right="auto";
+el.style.bottom="auto";
+
+if(e.cancelable)e.preventDefault();
+}
+
+function move(e){
+if(!dragging)return;
+
+let p=e.touches?e.touches[0]:e;
+
+let dx=p.clientX-sx;
+let dy=p.clientY-sy;
+
+let l=Math.max(
+0,
+Math.min(
+sl+dx,
+window.innerWidth-el.offsetWidth
+)
+);
+
+let t=Math.max(
+0,
+Math.min(
+st+dy,
+window.innerHeight-el.offsetHeight
+)
+);
+
+el.style.left=l+"px";
+el.style.top=t+"px";
+
+if(e.cancelable)e.preventDefault();
+}
+
+function up(){
+if(!dragging)return;
+dragging=false;
+localStorage.setItem(
+"inventory_position",
+JSON.stringify({
+left:parseInt(el.style.left),
+top:parseInt(el.style.top)
+})
+);
+}
+
+header.addEventListener("mousedown",down);
+window.addEventListener("mousemove",move);
+window.addEventListener("mouseup",up);
+
+header.addEventListener("touchstart",down,{passive:false});
+window.addEventListener("touchmove",move,{passive:false});
+window.addEventListener("touchend",up);
+}
+
+function loadInventoryPosition(){
+let p=null;
+
+try{
+p=JSON.parse(
+localStorage.getItem("inventory_position")||"null"
+);
+}catch(e){}
+
+if(!p)return;
+
+let el=document.getElementById("inventory");
+
+el.style.transform="none";
+el.style.left=Math.max(
+0,
+Math.min(
+p.left,
+window.innerWidth-el.offsetWidth
+)
+)+"px";
+
+el.style.top=Math.max(
+0,
+Math.min(
+p.top,
+window.innerHeight-el.offsetHeight
+)
+)+"px";
+
+el.style.right="auto";
+el.style.bottom="auto";
+}
+
+setTimeout(function(){
+loadUIPositions();
+loadInventoryPosition();
+},100);
 
 function changeView(){
 let v=document.getElementById("viewSelect").value;
@@ -415,7 +674,6 @@ document.getElementById("walkKm").innerText=
 checkPetReward();
 }
 }
-
 }
 
 if(lastSpeedPos){
@@ -451,6 +709,7 @@ maximumAge:0
 function checkPetReward(){
 while(rewardDistance>=2000){
 rewardDistance-=2000;
+
 localStorage.setItem(
 "pet_reward_distance",
 rewardDistance
@@ -529,7 +788,10 @@ document.getElementById("reward").style.display="none";
 
 function openInventory(){
 renderInventory();
+
 document.getElementById("inventory").style.display="block";
+
+setTimeout(loadInventoryPosition,0);
 }
 
 function closeInventory(){
@@ -538,43 +800,53 @@ document.getElementById("inventory").style.display="none";
 
 function renderInventory(){
 let grid=document.getElementById("petGrid");
+
 grid.innerHTML="";
 
-if(!pets.length){
-grid.innerHTML="<div>ペットはいません</div>";
-return;
-}
-
-pets.forEach(function(pet,index){
+for(let i=0;i<25;i++){
 let div=document.createElement("div");
 
-div.className="petCard "+pet.rarity;
+if(pets[i]){
+let pet=pets[i];
+
+div.className="petSlot "+pet.rarity;
 
 div.innerHTML=
+'<div class="petNumber">'+
+(i+1)+
+'</div>'+
 '<div class="petEmoji">'+
 pet.emoji+
 '</div>'+
-'<div class="petCardName">'+
+'<div class="petSmallName">'+
 escapeHTML(pet.name)+
-'</div>'+
-'<div class="petCardRarity">'+
-pet.rarity.toUpperCase()+
 '</div>';
 
 div.onclick=function(){
-showPetDetail(pet,index);
+showPetDetail(pet);
 };
+}else{
+div.className="petSlot empty";
 
-grid.appendChild(div);
-});
+div.innerHTML=
+'<div class="petNumber">'+
+(i+1)+
+'</div>';
 }
 
-function showPetDetail(pet,index){
-document.getElementById("petDetail").style.display="block";
+grid.appendChild(div);
+}
+
+document.getElementById("petCount").innerText=pets.length;
+}
+
+function showPetDetail(pet){
 document.getElementById("petDetailEmoji").innerText=pet.emoji;
 document.getElementById("petDetailName").innerText=pet.name;
 document.getElementById("petDetailRarity").innerText=
 pet.rarity.toUpperCase();
+
+document.getElementById("petDetail").style.display="block";
 }
 
 function closePetDetail(){
@@ -611,11 +883,16 @@ function updateDistances(){
 if(!currentPos)return;
 
 if(lineEndPoint){
-document.getElementById("distanceNow").innerText=
-"直線距離 "+
-formatDistance(
-distanceBetween(currentPos,lineEndPoint)
+let d=distanceBetween(
+currentPos,
+lineEndPoint
 );
+
+document.getElementById("distanceNow").innerText=
+"直線距離 "+formatDistance(d);
+
+document.getElementById("lineStatus").innerText=
+"距離 "+formatDistance(d);
 }
 
 if(routeDestination&&!roadRouteLine){
@@ -705,28 +982,6 @@ if(!routeMode||!currentPos||!routeDestination)return;
 requestRoadRoute();
 }
 
-function updateDistances(){
-if(!currentPos)return;
-
-if(lineEndPoint){
-let d=distanceBetween(
-currentPos,
-lineEndPoint
-);
-
-document.getElementById("distanceNow").innerText=
-"直線距離 "+formatDistance(d);
-
-document.getElementById("lineStatus").innerText=
-"距離 "+formatDistance(d);
-}
-
-if(routeDestination&&!roadRouteLine){
-document.getElementById("routeInfo").innerText=
-"道のり取得中";
-}
-}
-
 document.getElementById("lineMode").addEventListener(
 "change",
 function(){
@@ -786,7 +1041,7 @@ document.getElementById("routeStatus").innerText=
 map.on("click",function(e){
 if(
 e.originalEvent.target.closest(
-"#searchBox,#cameraBtn,#locationBtn,#followBox,#modeBox,#routeModeBox,#viewBox,#walkBox,#speedNow,#distanceNow,#routeInfo,#dir,#inventoryBtn"
+"#searchBox,#cameraBtn,#locationBtn,#followBox,#modeBox,#routeModeBox,#viewBox,#walkBox,#speedNow,#distanceNow,#routeInfo,#dir,#inventoryBtn,#inventory,#reward,#petDetail"
 )
 )return;
 
@@ -1027,6 +1282,7 @@ roadRouteLine=null;
 }
 
 lastRouteRequest=0;
+
 document.getElementById("routeStatus").innerText=
 "道のりを取得中";
 
@@ -1216,11 +1472,11 @@ document.getElementById("photoView").style.display="none";
 }
 
 loadPhotos();
+makeInventoryDraggable();
 
 setTimeout(function(){
 showCurrentLocation();
 },1000);
 </script>
-
 </body>
 </html>
